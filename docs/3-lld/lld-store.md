@@ -55,7 +55,7 @@ Tất cả selectors là custom hooks, dùng `useMemo` để tránh re-compute.
 
 ### `useStatsByStatus`
 ```typescript
-// Returns: { Lead: number, Proposal: number, Forecast: number, Order: number }
+// Returns: { Lead: number, Qualified: number, Proposal: number, Negotiation: number, Won: number, Lost: number }
 // Dùng cho: StatsBar — hiển thị count và tổng value mỗi status
 export function useStatsByStatus() {
   const opps = useOpportunityStore(s => s.opportunities);
@@ -125,15 +125,77 @@ export function useTopClients(limit = 25) {
 
 ### `useStaleLeads`
 ```typescript
-// Returns: Opportunity[] — leads không có activity > 3 ngày
-// Logic: status === 'Lead' && (today - lastContactDate) > 3 ngày
+// Returns: Opportunity[] — deals không có liên hệ > N ngày và không có nextActionDate pending
+// Logic: status ∈ [Lead, Qualified, Proposal] && (today - lastContactDate) > days
 export function useStaleLeads(days = 3) {
+  const opps = useOpportunityStore(s => s.opportunities);
+  const acts = useActivityStore(s => s.activities);
+  return useMemo(() => {
+    const now = Date.now();
+    const threshold = days * 24 * 60 * 60 * 1000;
+    const staleStatuses: OpportunityStatus[] = ['Lead', 'Qualified', 'Proposal'];
+    return opps.filter(opp => {
+      if (!staleStatuses.includes(opp.status)) return false;
+      if (now - new Date(opp.lastContactDate).getTime() <= threshold) return false;
+      // Loại bỏ nếu có nextActionDate pending (có task đã lên lịch)
+      const pendingTask = acts.find(
+        a => a.opportunityId === opp.id && a.nextActionDate &&
+          new Date(a.nextActionDate).getTime() >= now
+      );
+      return !pendingTask;
+    });
+  }, [opps, acts, days]);
+}
+```
+
+### `useOverdueTasks`
+```typescript
+// Returns: Array<{ activity: Activity, opportunity: Opportunity }>
+// Logic: activity.nextActionDate < today && opportunity không có activity mới hơn
+export function useOverdueTasks() {
+  const opps = useOpportunityStore(s => s.opportunities);
+  const acts = useActivityStore(s => s.activities);
+  return useMemo(() => {
+    const now = Date.now();
+    const results: Array<{ activity: Activity; opportunity: Opportunity }> = [];
+
+    acts.forEach(act => {
+      if (!act.nextActionDate) return;
+      if (new Date(act.nextActionDate).getTime() >= now) return; // chưa đến hạn
+      if (!act.opportunityId) return;
+
+      const opp = opps.find(o => o.id === act.opportunityId);
+      if (!opp || opp.status === 'Won' || opp.status === 'Lost') return;
+
+      // Kiểm tra xem có activity mới hơn không (tức là task đã được xử lý)
+      const hasNewerActivity = acts.some(
+        a => a.opportunityId === opp.id &&
+          a.id !== act.id &&
+          new Date(a.date).getTime() > new Date(act.nextActionDate!).getTime()
+      );
+      if (hasNewerActivity) return;
+
+      results.push({ activity: act, opportunity: opp });
+    });
+
+    return results.sort((a, b) =>
+      new Date(a.activity.nextActionDate!).getTime() -
+      new Date(b.activity.nextActionDate!).getTime()
+    );
+  }, [opps, acts]);
+}
+```
+
+### `useExpiringProposals`
+```typescript
+// Returns: Opportunity[] — stage Proposal, lastContactDate > 14 ngày
+export function useExpiringProposals(days = 14) {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() => {
     const now = Date.now();
     const threshold = days * 24 * 60 * 60 * 1000;
     return opps.filter(opp =>
-      opp.status === 'Lead' &&
+      opp.status === 'Proposal' &&
       now - new Date(opp.lastContactDate).getTime() > threshold
     );
   }, [opps, days]);

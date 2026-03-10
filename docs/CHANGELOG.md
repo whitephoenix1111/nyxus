@@ -4,6 +4,161 @@
 
 ---
 
+## [0.6.0] — 2026-03-10
+
+### Changed — B2B Workflow Redesign (3 cải tiến cốt lõi)
+
+#### Bối cảnh
+Phân tích workflow thực tế B2B phát hiện 3 mâu thuẫn trong thiết kế cũ:
+1. Client và Lead là hai entity tách rời, join bằng `company` name — dễ sai, khó maintain
+2. `nextAction` chỉ là text thuần — không có due date, không tạo reminder, dead data
+3. `confidence` do cá nhân tự nhập tuỳ ý — forecast không nhất quán giữa các rep
+
+#### Thay đổi 1: Client isProspect + Lead Creation Flow
+
+**Thiết kế cũ**: Nhân viên tạo Client riêng, rồi tạo Lead riêng, match bằng `company` string.
+
+**Thiết kế mới**: Một action duy nhất (`POST /api/leads`) tạo đồng thời:
+- `Client` với `isProspect: true` (chưa phải khách thật)
+- `Opportunity` với `status: Lead`, `clientId` liên kết chặt (hard FK, không join bằng tên)
+
+Khi promote → Qualified: `client.isProspect = false` (Client được activate).
+
+Client page có thể filter `?isProspect=false` để chỉ hiện khách hàng thật.
+
+#### Thay đổi 2: nextActionDate — Tasks có Due Date
+
+**Thiết kế cũ**: `nextAction` chỉ là string, không ai nhớ follow up.
+
+**Thiết kế mới**: Thêm field `nextActionDate?: string` (ISO 8601) vào `Activity`.
+
+- Khi `nextActionDate` đến hạn mà opportunity chưa có activity mới hơn → **overdue task**
+- Reminders Widget hiển thị 3 loại: `overdue_task`, `stale_deal`, `expiring_proposal`
+- `stale_deal` được cập nhật để loại trừ deals đã có `nextActionDate` pending (có kế hoạch rồi)
+
+Selectors mới: `useOverdueTasks()`, `useExpiringProposals()`. `useStaleLeads()` mở rộng sang `[Lead, Qualified, Proposal]`.
+
+#### Thay đổi 3: Confidence theo Stage — Nhất quán toàn team
+
+**Thiết kế cũ**: Nhân viên tự nhập confidence tuỳ ý khi tạo/edit opportunity.
+
+**Thiết kế mới**:
+- Confidence có **giá trị mặc định theo stage** (constants `STAGE_DEFAULT_CONFIDENCE`)
+- Khi promote deal: confidence tự nhảy về mặc định của stage mới
+- Nhân viên chỉ điều chỉnh trong range cho phép (`STAGE_CONFIDENCE_RANGE`)
+- Lead (15%) và Won (100%) và Lost (0%) không được override
+
+| Stage | Default | Range |
+|---|---|---|
+| Lead | 15% | cố định |
+| Qualified | 35% | ±15% (20–50%) |
+| Proposal | 60% | ±15% (45–75%) |
+| Negotiation | 80% | ±10% (70–90%) |
+| Won | 100% | cố định |
+| Lost | 0% | cố định |
+
+#### Types thay đổi (`src/types/index.ts`)
+- `STAGE_DEFAULT_CONFIDENCE` — constant mới
+- `STAGE_CONFIDENCE_RANGE` — constant mới
+- `Opportunity.clientId` — field mới (hard FK)
+- `Client.isProspect: boolean` — field mới
+- `Activity.nextActionDate?: string` — field mới
+- `Activity.promoteOpportunityTo?` — đã có từ trước
+- `ReminderAlert.type` — đổi thành `overdue_task | stale_deal | expiring_proposal`
+
+#### API mới
+- `POST /api/leads` — entry point cho Lead mới, tạo đồng thời Client + Opportunity
+- `GET /api/reminders` — tính toán server-side, trả về `ReminderAlert[]`
+
+#### Files cần cập nhật (Phase 4)
+- `src/types/index.ts` — thêm constants + sửa interfaces
+- `src/app/api/leads/route.ts` — tạo mới
+- `src/app/api/reminders/route.ts` — tạo mới
+- `src/app/api/activities/route.ts` — thêm side effects (promote + isProspect)
+- `src/store/useOpportunityStore.ts` — thêm `useOverdueTasks`, sửa `useStaleLeads`
+- `src/store/useActivityStore.ts` — thêm `nextActionDate` vào form
+- `src/app/leads/page.tsx` — dùng `POST /api/leads` thay vì `POST /api/opportunities`
+- `src/app/activities/page.tsx` — thêm `nextActionDate` field trong AddActivityModal
+- `src/components/dashboard/RemindersWidget.tsx` — hiển thị 3 loại reminder mới
+- `data/clients.json` — thêm `isProspect` field cho tất cả records
+- `data/opportunities.json` — thêm `clientId` field
+- `data/activities.json` — thêm `nextActionDate` field (một số records có giá trị)
+
+---
+
+## [0.5.0] — 2026-03-10
+
+### Changed — Refactor Pipeline Status + Activity Design Philosophy
+
+#### Quyết định kiến trúc quan trọng
+- **`Forecast` không còn là một pipeline stage** — đây chỉ là trang phân tích/dự báo dựa trên `confidence` score, không phải bước trong quy trình bán hàng
+- **`Order` đổi thành `Won`** — rõ nghĩa hơn trong ngữ cảnh sales pipeline
+- **Thêm `Lost`** — ghi nhận deal thất bại để phân tích, không bị xóa khỏi hệ thống
+- **Thêm `Qualified` và `Negotiation`** — phân biệt rõ các giai đoạn thực tế
+
+#### Pipeline mới
+```
+Cũ: Lead → Proposal → Forecast → Order
+Mới: Lead → Qualified → Proposal → Negotiation → Won / Lost
+```
+
+| Stage | Ý nghĩa | Confidence gợi ý |
+|---|---|---|
+| Lead | Mới vào, chưa qualify | 10–20% |
+| Qualified | Đã xác nhận nhu cầu, budget, timeline | 30–50% |
+| Proposal | Đã gửi đề xuất, chờ phản hồi | 50–70% |
+| Negotiation | Đang thương lượng giá/điều khoản | 70–90% |
+| Won | Chốt đơn thành công | 100% |
+| Lost | Deal thất bại (giữ lại để phân tích) | 0% |
+
+#### Types (`src/types/index.ts`)
+- `OpportunityStatus` union: `'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost'`
+- `Opportunity` interface: thêm `statusHistory?` — lưu lịch sử promote với `activityId` để trace
+- `Activity` interface: thêm `promoteOpportunityTo?: OpportunityStatus` — khi lưu activity có field này, API tự động promote opportunity tương ứng
+
+#### Data Migration (`data/opportunities.json`)
+- `Forecast` → `Negotiation` (deal đã đủ chín để dự báo = đang negotiate)
+- `Order` → `Won`
+- `opp-009` (Derek Stone — không phản hồi 3 tháng) → `Lost`, `confidence: 0`
+- `opp-025` (Ben Carter — budget không đủ) → `Lost`, `confidence: 0`
+- `opp-014`, `opp-020` → `Qualified` (lead đã contact nhưng chưa có proposal)
+
+#### Store (`src/store/useOpportunityStore.ts`)
+- `useStatsByStatus` — counts/values map cập nhật 6 keys mới
+- `useStaleLeads` — filter cả `Lead` lẫn `Qualified` (không chỉ Lead)
+- `useReminders` — `expiringProposals` bao gồm cả `Negotiation`
+- `useForecastRevenue` — exclude `Lost` khỏi weighted sum
+- `useNoContactLeads` — không đổi logic, vẫn dùng `lastContactDate`
+
+#### Store (`src/store/useClientStore.ts`)
+- `topStatus` priority array: `Won > Negotiation > Proposal > Qualified > Lead > Lost`
+
+#### UI — Màu sắc status mới
+| Status | Text | Background |
+|---|---|---|
+| Lead | `#AAAAAA` | `#1A1A1A` |
+| Qualified | `#5BA3F5` | `#0D1B2A` |
+| Proposal | `#F5A742` | `#1A1000` |
+| Negotiation | `#F5C842` | `#1A1400` |
+| Won | `#DFFF00` | `#DFFF0015` |
+| Lost | `#EF4444` | `#1C0505` |
+
+#### Files cập nhật
+- `src/lib/utils.ts` — `STATUS_COLORS`
+- `src/app/opportunities/page.tsx` — constants, filter tabs, modal select
+- `src/app/leads/page.tsx` — `PromoteModal` steps
+- `src/app/forecast/page.tsx` — `STATUS_CONFIG`, funnel (không render `Lost`), winRate dùng `counts.Won`
+- `src/components/dashboard/StatCard.tsx` — icons + labels, hiển thị `Negotiation`/`Won`
+- `src/components/dashboard/KPIScatterChart.tsx` — `STATUS_VI`, dot glow cho `Won`
+- `src/app/page.tsx` — StatCards dùng `Negotiation`/`Won`, recalc `totalSales`/`openQuotes`
+- `src/app/clients/_components/_constants.ts` — `STATUS_STYLE` + `STATUS_LABELS`
+
+#### Bug fixes (phát hiện trong session này)
+- `GET /api/activities/[id]` — bị thiếu, đã thêm vào `src/app/api/activities/[id]/route.ts`
+- `useReminders()` selector — chưa tồn tại, đã thêm vào `useOpportunityStore.ts`
+
+---
+
 ## [0.4.0] — 2026-03-10
 
 ### Added — Activities Module (hoàn chỉnh)

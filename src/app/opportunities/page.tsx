@@ -14,20 +14,20 @@ import type { Opportunity, OpportunityStatus } from '@/types';
 
 // ── Constants ───────────────────────────────────────────────────
 
-const ALL_STATUSES: OpportunityStatus[] = ['Lead', 'Proposal', 'Forecast', 'Order'];
+const ALL_STATUSES: OpportunityStatus[] = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'];
 
 const STATUS_LABELS: Record<OpportunityStatus, string> = {
-  Lead: 'Tiềm năng',
-  Proposal: 'Đề xuất',
-  Forecast: 'Dự báo',
-  Order: 'Đơn hàng',
+  Lead: 'Tiềm năng', Qualified: 'Đủ điều kiện', Proposal: 'Đề xuất',
+  Negotiation: 'Thương lượng', Won: 'Chốt đơn', Lost: 'Thất bại',
 };
 
 const STATUS_STYLE: Record<OpportunityStatus, { bg: string; text: string; border: string }> = {
-  Lead:     { bg: '#1A1A1A', text: '#AAAAAA', border: '#333333' },
-  Proposal: { bg: '#0D1B2A', text: '#5BA3F5', border: '#1A3A5C' },
-  Forecast: { bg: '#1A1400', text: '#F5C842', border: '#3A3000' },
-  Order:    { bg: '#DFFF0015', text: '#DFFF00', border: '#DFFF0044' },
+  Lead:        { bg: '#1A1A1A',   text: '#AAAAAA', border: '#333333' },
+  Qualified:   { bg: '#0D1B2A',   text: '#5BA3F5', border: '#1A3A5C' },
+  Proposal:    { bg: '#1A1000',   text: '#F5A742', border: '#3A2500' },
+  Negotiation: { bg: '#1A1400',   text: '#F5C842', border: '#3A3000' },
+  Won:         { bg: '#DFFF0015', text: '#DFFF00', border: '#DFFF0044' },
+  Lost:        { bg: '#1C0505',   text: '#EF4444', border: '#7f1d1d' },
 };
 
 type SortKey = 'clientName' | 'company' | 'value' | 'status' | 'date' | 'confidence';
@@ -193,6 +193,7 @@ function AddModal({ onClose, onAdd }: { onClose: () => void; onAdd: (d: Omit<Opp
             <label className={labelCls}>Trạng thái</label>
             <select className={inputCls} value={form.status}
               onChange={e => setForm(f => ({ ...f, status: e.target.value as OpportunityStatus }))}>
+
               {ALL_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
             </select>
           </div>

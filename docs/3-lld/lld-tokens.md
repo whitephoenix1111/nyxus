@@ -74,11 +74,13 @@
 | Status | BG | Text | Border |
 |---|---|---|---|
 | Lead | `#1A1A1A` | `#AAAAAA` | `#333333` |
-| Proposal | `#0D1B2A` | `#5BA3F5` | `#1A3A5C` |
-| Forecast | `#1A1400` | `#F5C842` | `#3A3000` |
-| Order | `#DFFF0015` | `#DFFF00` | `#DFFF0044` |
+| Qualified | `#0D1B2A` | `#5BA3F5` | `#1A3A5C` |
+| Proposal | `#1A1000` | `#F5A742` | `#3A2500` |
+| Negotiation | `#1A1400` | `#F5C842` | `#3A3000` |
+| Won | `#DFFF0015` | `#DFFF00` | `#DFFF0044` |
+| Lost | `#1C0505` | `#EF4444` | `#7f1d1d` |
 
-**Tailwind classes có sẵn**: `.badge-lead`, `.badge-proposal`, `.badge-forecast`, `.badge-order`
+**Tailwind classes có sẵn**: `.badge-lead`, `.badge-qualified`, `.badge-proposal`, `.badge-negotiation`, `.badge-won`, `.badge-lost`
 
 ---
 

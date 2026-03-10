@@ -14,16 +14,20 @@ interface StatCardProps {
 
 const STATUS_ICONS: Record<OpportunityStatus, string> = {
   Lead: '◱',
+  Qualified: '◎',
   Proposal: '⊞',
-  Forecast: '⤴',
-  Order: '⬡',
+  Negotiation: '⇄',
+  Won: '⬡',
+  Lost: '×',
 };
 
 const STATUS_LABELS: Record<OpportunityStatus, string> = {
-  Lead: 'Cơ hội',
+  Lead: 'Tiềm năng',
+  Qualified: 'Đủ điều kiện',
   Proposal: 'Đề xuất',
-  Forecast: 'Dự báo',
-  Order: 'Đơn hàng',
+  Negotiation: 'Thương lượng',
+  Won: 'Chốt đơn',
+  Lost: 'Thất bại',
 };
 
 export default function StatCard({ status, count, totalValue, delta, isActive }: StatCardProps) {

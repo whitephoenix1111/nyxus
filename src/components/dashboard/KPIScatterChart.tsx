@@ -30,7 +30,7 @@ function CustomDot(props: { cx?: number; cy?: number; payload?: DataPoint }) {
   const { cx, cy, payload } = props;
   if (!cx || !cy || !payload) return null;
   const color = STATUS_COLORS[payload.status] ?? '#555';
-  const isOrder = payload.status === 'Order';
+  const isOrder = payload.status === 'Won';
   return (
     <circle
       cx={cx}
@@ -55,9 +55,11 @@ interface CustomTooltipProps {
 
 const STATUS_VI: Record<OpportunityStatus, string> = {
   Lead: 'Tiềm năng',
+  Qualified: 'Đủ điều kiện',
   Proposal: 'Đề xuất',
-  Forecast: 'Dự báo',
-  Order: 'Đơn hàng',
+  Negotiation: 'Thương lượng',
+  Won: 'Chốt đơn',
+  Lost: 'Thất bại',
 };
 
 function CustomTooltip({ active, payload }: CustomTooltipProps) {

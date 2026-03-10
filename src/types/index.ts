@@ -1,4 +1,4 @@
-export type OpportunityStatus = 'Lead' | 'Proposal' | 'Forecast' | 'Order';
+export type OpportunityStatus = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
 
 export interface Opportunity {
   id: string;
@@ -11,6 +11,12 @@ export interface Opportunity {
   lastContactDate: string;
   confidence: number;
   notes?: string;
+  statusHistory?: Array<{
+    from: OpportunityStatus;
+    to: OpportunityStatus;
+    date: string;
+    activityId?: string;
+  }>;
 }
 
 export type ClientTag = 'enterprise' | 'mid-market' | 'priority' | 'warm' | 'cold' | 'new-lead';
@@ -52,6 +58,7 @@ export interface Activity {
   clientName: string;        // denormalized — tránh join mỗi lần render
   company: string;           // denormalized
   opportunityId?: string;    // optional ref → opportunities.json
+  promoteOpportunityTo?: OpportunityStatus; // nếu có → tự promote opportunity khi lưu
   outcome: ActivityOutcome;
   nextAction: string;        // bước tiếp theo cần làm
   notes: string;

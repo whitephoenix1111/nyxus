@@ -34,9 +34,9 @@ export default function DashboardPage() {
     fetchOpportunities();
   }, [fetchOpportunities]);
 
-  const totalSales = values.Order;
-  const openQuotes = counts.Proposal + counts.Forecast;
-  const totalOpps = counts.Lead + counts.Proposal + counts.Forecast + counts.Order;
+  const totalSales = values.Won;
+  const openQuotes = counts.Proposal + counts.Negotiation;
+  const totalOpps = counts.Lead + counts.Qualified + counts.Proposal + counts.Negotiation;
 
   if (isLoading) {
     return (
@@ -57,10 +57,10 @@ export default function DashboardPage() {
 
         {/* Thanh thống kê */}
         <div className="grid grid-cols-4 gap-3 mb-6">
-          <StatCard status="Lead"     count={counts.Lead}     totalValue={values.Lead}     delta={28} isActive />
-          <StatCard status="Proposal" count={counts.Proposal} totalValue={values.Proposal} delta={104} />
-          <StatCard status="Forecast" count={counts.Forecast} totalValue={values.Forecast} delta={2} />
-          <StatCard status="Order"    count={counts.Order}    totalValue={values.Order}    delta={560} />
+          <StatCard status="Lead"        count={counts.Lead}        totalValue={values.Lead}        delta={28}  isActive />
+          <StatCard status="Proposal"    count={counts.Proposal}    totalValue={values.Proposal}    delta={104} />
+          <StatCard status="Negotiation" count={counts.Negotiation} totalValue={values.Negotiation} delta={2}   />
+          <StatCard status="Won"         count={counts.Won}         totalValue={values.Won}         delta={560} />
         </div>
 
         {/* Tab doanh số */}

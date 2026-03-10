@@ -19,10 +19,12 @@ function fmt(n: number) {
 
 // ── Status colour map ──────────────────────────────────────────
 const STATUS_CONFIG: Record<OpportunityStatus, { bar: string; label: string; conf: number }> = {
-  Lead:     { bar: '#333333', label: 'Lead',     conf: 10 },
-  Proposal: { bar: '#5BA3F5', label: 'Đề xuất',  conf: 40 },
-  Forecast: { bar: '#F5C842', label: 'Dự báo',   conf: 75 },
-  Order:    { bar: '#DFFF00', label: 'Đơn hàng', conf: 100 },
+  Lead:        { bar: '#555555', label: 'Tiềm năng',       conf: 15 },
+  Qualified:   { bar: '#5BA3F5', label: 'Đủ điều kiện',   conf: 40 },
+  Proposal:    { bar: '#F5A742', label: 'Đề xuất',        conf: 60 },
+  Negotiation: { bar: '#F5C842', label: 'Thương lượng',    conf: 80 },
+  Won:         { bar: '#DFFF00', label: 'Chốt đơn',       conf: 100 },
+  Lost:        { bar: '#EF4444', label: 'Thất bại',        conf: 0 },
 };
 
 // ── Sub-components ─────────────────────────────────────────────
@@ -216,21 +218,21 @@ export default function ForecastPage() {
   const totalCount = opportunities.length;
 
   const weightedByStatus = useMemo(() => {
-    const map: Record<OpportunityStatus, number> = { Lead: 0, Proposal: 0, Forecast: 0, Order: 0 };
+    const map: Record<OpportunityStatus, number> = { Lead: 0, Qualified: 0, Proposal: 0, Negotiation: 0, Won: 0, Lost: 0 };
     opportunities.forEach((o) => {
       map[o.status] += o.value * (o.confidence / 100);
     });
     return map;
   }, [opportunities]);
 
-  const winRate = totalCount > 0 ? ((counts.Order || 0) / totalCount) * 100 : 0;
+  const winRate = totalCount > 0 ? ((counts.Won || 0) / totalCount) * 100 : 0;
 
   const sortedOpps = useMemo(
     () => [...opportunities].sort((a, b) => b.value * (b.confidence / 100) - a.value * (a.confidence / 100)),
     [opportunities]
   );
 
-  const riskyDeals = opportunities.filter((o) => o.confidence < 40 && o.status !== 'Lead');
+  const riskyDeals = opportunities.filter((o) => o.confidence < 40 && o.status !== 'Lead' && o.status !== 'Won' && o.status !== 'Lost');
 
   if (isLoading) {
     return (
@@ -293,7 +295,7 @@ export default function ForecastPage() {
           icon={Target}
           label="Tỉ Lệ Thắng"
           value={`${winRate.toFixed(1)}%`}
-          sub={`${counts.Order || 0} đơn hàng đã chốt`}
+          sub={`${counts.Won || 0} đơn hàng đã chốt`}
         />
         <KpiCard
           icon={BarChart3}
@@ -348,7 +350,7 @@ export default function ForecastPage() {
                 <span style={{ color: 'var(--color-brand)' }}>Trọng số</span>
               </div>
             </div>
-            {(['Lead', 'Proposal', 'Forecast', 'Order'] as OpportunityStatus[]).map((s) => (
+            {(['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won'] as OpportunityStatus[]).map((s) => (
               <FunnelBar
                 key={s}
                 status={s}

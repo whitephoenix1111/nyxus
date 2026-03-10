@@ -24,8 +24,10 @@ export function getInitials(name: string): string {
 export const MONTH_LABELS = ['th1','th2','th3','th4','th5','th6','th7','th8','th9','th10','th11','th12'];
 
 export const STATUS_COLORS: Record<string, string> = {
-  Lead:     '#555555',
-  Proposal: '#3B82F6',
-  Forecast: '#F59E0B',
-  Order:    '#DFFF00',
+  Lead:        '#555555',
+  Qualified:   '#5BA3F5',
+  Proposal:    '#F5A742',
+  Negotiation: '#F5C842',
+  Won:         '#DFFF00',
+  Lost:        '#EF4444',
 };

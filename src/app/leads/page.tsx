@@ -115,8 +115,11 @@ function LeadModal({
 
 // ── Promote Modal ─────────────────────────────────────────────────
 
-const PROMOTE_STEPS: OpportunityStatus[] = ['Proposal', 'Forecast', 'Order'];
-const PROMOTE_LABELS: Record<string, string> = { Proposal: 'Đề xuất', Forecast: 'Dự báo', Order: 'Đơn hàng' };
+const PROMOTE_STEPS: OpportunityStatus[] = ['Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'];
+const PROMOTE_LABELS: Record<string, string> = {
+  Qualified: 'Đủ điều kiện', Proposal: 'Đề xuất',
+  Negotiation: 'Thương lượng', Won: 'Chốt đơn', Lost: 'Thất bại',
+};
 
 function PromoteModal({ opp, onClose, onPromote }: { opp: Opportunity; onClose: () => void; onPromote: (s: OpportunityStatus) => void }) {
   return (

@@ -96,7 +96,7 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
       );
 
       // topStatus = highest priority status
-      const priority = ['Order', 'Forecast', 'Proposal', 'Lead'] as const;
+      const priority = ['Won', 'Negotiation', 'Proposal', 'Qualified', 'Lead', 'Lost'] as const;
       const topStatus =
         priority.find((s) => clientOpps.some((o) => o.status === s)) ?? null;
 

@@ -101,10 +101,10 @@ export function useStatsByStatus() {
   const opps = useOpportunityStore((s) => s.opportunities);
   return useMemo(() => {
     const counts: Record<OpportunityStatus, number> = {
-      Lead: 0, Proposal: 0, Forecast: 0, Order: 0,
+      Lead: 0, Qualified: 0, Proposal: 0, Negotiation: 0, Won: 0, Lost: 0,
     };
     const values: Record<OpportunityStatus, number> = {
-      Lead: 0, Proposal: 0, Forecast: 0, Order: 0,
+      Lead: 0, Qualified: 0, Proposal: 0, Negotiation: 0, Won: 0, Lost: 0,
     };
     opps.forEach((o) => {
       counts[o.status]++;
@@ -140,7 +140,9 @@ export function useAverageValue() {
 export function useForecastRevenue() {
   const opps = useOpportunityStore((s) => s.opportunities);
   return useMemo(() =>
-    opps.reduce((sum, o) => sum + o.value * (o.confidence / 100), 0),
+    opps
+      .filter(o => o.status !== 'Lost')
+      .reduce((sum, o) => sum + o.value * (o.confidence / 100), 0),
     [opps]
   );
 }
@@ -160,10 +162,52 @@ export function useStaleLeads(days = 3) {
     const now = Date.now();
     return opps.filter(
       (o) =>
-        o.status === 'Lead' &&
+        (o.status === 'Lead' || o.status === 'Qualified') &&
         now - new Date(o.lastContactDate).getTime() > threshold
     );
   }, [opps, days]);
+}
+
+export function useReminders() {
+  const staleLeads = useStaleLeads(3);
+  const noContact  = useNoContactLeads(7);
+  const opps       = useOpportunityStore(s => s.opportunities);
+
+  return useMemo(() => {
+    const now = Date.now();
+    const expiringProposals = opps.filter(o =>
+      (o.status === 'Proposal' || o.status === 'Negotiation') &&
+      now - new Date(o.date).getTime() > 14 * 24 * 60 * 60 * 1000
+    );
+
+    const alerts = [];
+
+    if (staleLeads.length > 0) alerts.push({
+      id: 'stale_lead',
+      type: 'stale_lead' as const,
+      count: staleLeads.length,
+      label: 'Leads chưa có hoạt động',
+      description: `${staleLeads.length} lead không có liên hệ trong 3 ngày qua`,
+    });
+
+    if (noContact.length > 0) alerts.push({
+      id: 'no_contact',
+      type: 'no_contact' as const,
+      count: noContact.length,
+      label: 'Chưa liên hệ gần đây',
+      description: `${noContact.length} cơ hội không có liên hệ trong 7 ngày`,
+    });
+
+    if (expiringProposals.length > 0) alerts.push({
+      id: 'expiring_proposal',
+      type: 'expiring_proposal' as const,
+      count: expiringProposals.length,
+      label: 'Đề xuất sắp hết hạn',
+      description: `${expiringProposals.length} đề xuất đã mở quá 14 ngày`,
+    });
+
+    return alerts;
+  }, [staleLeads, noContact, opps]);
 }
 
 export function useNoContactLeads(days = 7) {
