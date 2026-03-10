@@ -35,7 +35,7 @@ export default function ClientCard({ opportunity }: ClientCardProps) {
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-white leading-tight truncate">{clientName}</p>
-          <p className="text-xs text-[#555] truncate">{company}</p>
+          <p className="text-xs --color-text-faint truncate">{company}</p>
         </div>
       </div>
       <div className="flex items-end justify-between">
@@ -43,9 +43,9 @@ export default function ClientCard({ opportunity }: ClientCardProps) {
           <p className="text-base font-bold text-white tabular-nums">
             {formatCurrencyFull(value)}
           </p>
-          <p className="text-xs text-[#555]">Tổng giá trị</p>
+          <p className="text-xs --color-text-faint">Tổng giá trị</p>
         </div>
-        <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a1a1a] text-[#555] hover:bg-[#DFFF00] hover:text-black transition-all">
+        <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a1a1a] --color-text-faint hover:bg-[#DFFF00] hover:text-black transition-all">
           <ArrowUpRight size={13} />
         </button>
       </div>

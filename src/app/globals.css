@@ -25,7 +25,7 @@
   --color-brand-muted:     #DFFF0022;      /* Lime 13% opacity — backgrounds      */
   --color-brand-border:    #DFFF0044;      /* Lime 27% opacity — borders/rings    */
 
-  /* ── NEUTRAL SCALE (9 steps) ──────────────────────────── */
+  /* ── NEUTRAL SCALE (11 steps) ─────────────────────────── */
   --color-neutral-0:       #000000;        /* Page background                     */
   --color-neutral-50:      #0A0A0A;        /* Subtle background                   */
   --color-neutral-100:     #111111;        /* Card background                     */
@@ -33,41 +33,43 @@
   --color-neutral-200:     #1A1A1A;        /* Card hover / active nav             */
   --color-neutral-300:     #222222;        /* Borders default                     */
   --color-neutral-400:     #333333;        /* Borders hover / dividers            */
-  --color-neutral-500:     #555555;        /* Muted icons                         */
-  --color-neutral-600:     #888888;        /* Muted text / placeholders           */
-  --color-neutral-700:     #AAAAAA;        /* Secondary text                      */
+  --color-neutral-500:     #555555;        /* Muted icons (không dùng cho text)   */
+  --color-neutral-550:     #666666;        /* Label uppercase, meta nhỏ nhất      */
+  --color-neutral-600:     #777777;        /* Secondary text, company name        */
+  --color-neutral-650:     #888888;        /* Hint text, contact info             */
+  --color-neutral-700:     #999999;        /* Placeholder input, ghi chú content  */
+  --color-neutral-750:     #AAAAAA;        /* Secondary heading, badge lead text  */
   --color-neutral-800:     #CCCCCC;        /* Body text                           */
   --color-neutral-900:     #FFFFFF;        /* Primary text / headings             */
 
   /* ── SEMANTIC — STATUS BADGE COLORS ──────────────────── */
-  /* Each status: bg (muted) + text + border */
-  --color-status-lead-bg:       #1A1A1A;
-  --color-status-lead-text:     #AAAAAA;
-  --color-status-lead-border:   #333333;
+  --color-status-lead-bg:           #1A1A1A;
+  --color-status-lead-text:         #AAAAAA;
+  --color-status-lead-border:       #333333;
 
-  --color-status-proposal-bg:   #0D1B2A;
-  --color-status-proposal-text: #5BA3F5;
-  --color-status-proposal-border: #1A3A5C;
+  --color-status-proposal-bg:       #0D1B2A;
+  --color-status-proposal-text:     #5BA3F5;
+  --color-status-proposal-border:   #1A3A5C;
 
-  --color-status-forecast-bg:   #1A1400;
-  --color-status-forecast-text: #F5C842;
-  --color-status-forecast-border:#3A3000;
+  --color-status-forecast-bg:       #1A1400;
+  --color-status-forecast-text:     #F5C842;
+  --color-status-forecast-border:   #3A3000;
 
-  --color-status-order-bg:      #DFFF0015;
-  --color-status-order-text:    #DFFF00;
-  --color-status-order-border:  #DFFF0044;
+  --color-status-order-bg:          #DFFF0015;
+  --color-status-order-text:        #DFFF00;
+  --color-status-order-border:      #DFFF0044;
 
   /* ── SEMANTIC — FEEDBACK COLORS ──────────────────────── */
-  --color-success:         #22C55E;        /* Positive delta, confirmed           */
+  --color-success:         #22C55E;
   --color-success-bg:      #052E16;
-  --color-warning:         #F59E0B;        /* Caution, pending                    */
+  --color-warning:         #F59E0B;
   --color-warning-bg:      #1C0A00;
-  --color-danger:          #EF4444;        /* Negative delta, overdue             */
+  --color-danger:          #EF4444;
   --color-danger-bg:       #1C0505;
-  --color-info:            #3B82F6;        /* Neutral info                        */
+  --color-info:            #3B82F6;
   --color-info-bg:         #0A1628;
 
-  /* ── SURFACE TOKENS (semantic aliases) ───────────────── */
+  /* ── SURFACE TOKENS ───────────────────────────────────── */
   --color-bg:              var(--color-neutral-0);
   --color-surface:         var(--color-neutral-100);
   --color-surface-alt:     var(--color-neutral-150);
@@ -75,20 +77,25 @@
   --color-border:          var(--color-neutral-300);
   --color-border-hover:    var(--color-neutral-400);
 
-  /* ── TEXT TOKENS (semantic aliases) ──────────────────── */
-  --color-text-primary:    var(--color-neutral-900);
-  --color-text-secondary:  var(--color-neutral-700);
-  --color-text-muted:      var(--color-neutral-600);
-  --color-text-disabled:   var(--color-neutral-500);
+  /* ── TEXT TOKENS ──────────────────────────────────────── */
+  /* Dùng những token này trong component, KHÔNG dùng raw hex */
+  --color-text-primary:    var(--color-neutral-900);   /* #fff   — heading, số liệu chính   */
+  --color-text-body:       var(--color-neutral-800);   /* #ccc   — nội dung paragraph       */
+  --color-text-secondary:  var(--color-neutral-750);   /* #aaa   — tên secondary            */
+  --color-text-tertiary:   var(--color-neutral-700);   /* #999   — placeholder, hint        */
+  --color-text-muted:      var(--color-neutral-650);   /* #888   — contact info, meta       */
+  --color-text-subtle:     var(--color-neutral-600);   /* #777   — company, secondary text  */
+  --color-text-faint:      var(--color-neutral-550);   /* ##868080   — label uppercase, caption */
+  --color-text-disabled:   var(--color-neutral-500);   /* #555   — icon mờ, disabled        */
 
   /* ── CHART COLORS ─────────────────────────────────────── */
-  --color-chart-order:     #DFFF00;        /* Dots for Order status               */
-  --color-chart-forecast:  #F5C842;        /* Dots for Forecast                   */
-  --color-chart-proposal:  #5BA3F5;        /* Dots for Proposal                   */
-  --color-chart-lead:      #555555;        /* Dots for Lead (gray, low priority)  */
-  --color-chart-avg-line:  #DFFF0088;      /* ReferenceLine — average             */
-  --color-chart-grid:      #1A1A1A;        /* Grid lines                          */
-  --color-chart-axis:      #444444;        /* Axis labels                         */
+  --color-chart-order:     #DFFF00;
+  --color-chart-forecast:  #F5C842;
+  --color-chart-proposal:  #5BA3F5;
+  --color-chart-lead:      #555555;
+  --color-chart-avg-line:  #DFFF0088;
+  --color-chart-grid:      #1A1A1A;
+  --color-chart-axis:      #444444;
 }
 
 /* ============================================================
@@ -115,7 +122,6 @@ html, body {
    TYPOGRAPHY SCALE
    ============================================================ */
 
-/* Display — dùng cho số liệu lớn (StatCard, KPI) */
 .text-display {
   font-family: var(--font-display);
   font-weight: 700;
@@ -123,17 +129,15 @@ html, body {
   letter-spacing: -0.02em;
 }
 
-/* Mono — dùng cho giá tiền, IDs, data values */
 .text-data {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/* Label — dùng cho badge, nav items */
 .text-label {
   font-family: var(--font-display);
-  font-size: 0.6875rem;   /* 11px */
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -143,7 +147,6 @@ html, body {
    COMPONENT BASE STYLES
    ============================================================ */
 
-/* Card base */
 .card {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -155,14 +158,12 @@ html, body {
   border-color: var(--color-border-hover);
 }
 
-/* Brand card — lime accent (active StatCard) */
 .card-brand {
   background-color: var(--color-brand);
   border-color: var(--color-brand);
   color: #000000;
 }
 
-/* Status badge base */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -200,10 +201,50 @@ html, body {
 }
 
 /* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+
+/* Input base — dùng toàn dự án */
+.input-base {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.input-base::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input-base:focus {
+  border-color: var(--color-brand);
+}
+
+/* Select base */
+.select-base {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.select-base:focus {
+  border-color: var(--color-brand);
+}
+
+/* ============================================================
    INTERACTIVE STATES
    ============================================================ */
 
-/* Focus ring — dùng cho input, button */
 .focus-ring {
   outline: none;
 }
@@ -212,7 +253,6 @@ html, body {
   outline-offset: 2px;
 }
 
-/* Button — primary (brand) */
 .btn-primary {
   background-color: var(--color-brand);
   color: #000000;
@@ -233,10 +273,9 @@ html, body {
   transform: scale(0.98);
 }
 
-/* Button — ghost */
 .btn-ghost {
   background-color: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-text-subtle);
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
@@ -277,7 +316,7 @@ html, body {
 }
 
 /* ============================================================
-   UTILITY — BRAND GLOW (dùng cho hover chart dots, active elements)
+   UTILITY — BRAND GLOW
    ============================================================ */
 .glow-brand {
   filter: drop-shadow(0 0 6px #DFFF0066);

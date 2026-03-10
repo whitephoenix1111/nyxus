@@ -13,13 +13,30 @@ export interface Opportunity {
   notes?: string;
 }
 
+export type ClientTag = 'enterprise' | 'mid-market' | 'priority' | 'warm' | 'cold' | 'new-lead';
+
 export interface Client {
   id: string;
   name: string;
   company: string;
   avatar: string;
+  email: string;
+  phone: string;
+  industry: string;
+  country: string;
+  website: string;
+  tags: ClientTag[];
+  notes: string;
+  createdAt: string;
+}
+
+// Derived type — computed by joining Client + Opportunities
+export interface ClientWithStats extends Client {
   totalValue: number;
   opportunityCount: number;
+  topStatus: OpportunityStatus | null;
+  forecastValue: number;
+  opportunities: Opportunity[];
 }
 
 export interface ReminderAlert {

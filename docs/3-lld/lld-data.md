@@ -10,10 +10,10 @@
 export type OpportunityStatus = 'Lead' | 'Proposal' | 'Forecast' | 'Order';
 
 export interface Opportunity {
-  id: string;                    // uuid v4
+  id: string;
   clientName: string;
   company: string;
-  avatar: string;                // URL hoặc initials string
+  avatar: string;                // initials string (e.g. "TC")
   value: number;                 // USD, integer
   status: OpportunityStatus;
   date: string;                  // ISO 8601: "2025-07-15"
@@ -22,13 +22,30 @@ export interface Opportunity {
   notes?: string;
 }
 
+export type ClientTag = 'enterprise' | 'mid-market' | 'priority' | 'warm' | 'cold' | 'new-lead';
+
 export interface Client {
   id: string;
   name: string;
   company: string;
-  avatar: string;
-  totalValue: number;            // Sum of all won opportunities
+  avatar: string;                // initials string
+  email: string;
+  phone: string;
+  industry: string;              // English key — dịch sang VI ở UI layer
+  country: string;
+  website: string;
+  tags: ClientTag[];
+  notes: string;
+  createdAt: string;             // ISO date: "2025-09-15"
+}
+
+// Derived type — computed bằng cách join Client + Opportunities (match theo company)
+export interface ClientWithStats extends Client {
+  totalValue: number;
   opportunityCount: number;
+  topStatus: OpportunityStatus | null;
+  forecastValue: number;         // SUM(value * confidence/100)
+  opportunities: Opportunity[];
 }
 
 export interface ReminderAlert {
@@ -54,20 +71,9 @@ export interface ReminderAlert {
     "avatar": "TC",
     "value": 120600,
     "status": "Order",
-    "date": "2025-07-10",
-    "lastContactDate": "2025-07-08",
+    "date": "2025-01-10",
+    "lastContactDate": "2025-01-08",
     "confidence": 100
-  },
-  {
-    "id": "opp-002",
-    "clientName": "Elliot Burke",
-    "company": "Quantum Solutions",
-    "avatar": "EB",
-    "value": 80000,
-    "status": "Forecast",
-    "date": "2025-06-22",
-    "lastContactDate": "2025-06-20",
-    "confidence": 75
   }
 ]
 ```
@@ -80,34 +86,42 @@ export interface ReminderAlert {
     "name": "Tommy Cox",
     "company": "Tech Solution, Inc.",
     "avatar": "TC",
-    "totalValue": 120600,
-    "opportunityCount": 3
+    "email": "tommy.cox@techsolution.com",
+    "phone": "+1 (415) 882-3301",
+    "industry": "Technology",
+    "country": "USA",
+    "website": "techsolution.com",
+    "tags": ["enterprise", "priority"],
+    "notes": "Long-term partner.",
+    "createdAt": "2024-09-15"
   }
 ]
 ```
+
+> **Lưu ý join:** `ClientWithStats` được tính runtime bằng cách match `client.company` với `opportunity.company` (case-insensitive). Không có foreign key cứng.
 
 ---
 
 ## 3. API Routes
 
-### `GET /api/opportunities`
-- Đọc `/data/opportunities.json`
-- Returns: `Opportunity[]`
-- Query params: `?status=Lead` (optional filter)
+### Opportunities
 
-### `POST /api/opportunities`
-- Body: `Omit<Opportunity, 'id'>` — id tự sinh bằng `crypto.randomUUID()`
-- Append vào JSON file
-- Returns: `Opportunity` (với id mới)
+| Method | Path | Body | Returns |
+|--------|------|------|---------|
+| GET | `/api/opportunities` | — | `Opportunity[]` (filter: `?status=`) |
+| POST | `/api/opportunities` | `Omit<Opportunity, 'id'>` | `Opportunity` |
+| PATCH | `/api/opportunities/[id]` | `Partial<Opportunity>` | `Opportunity` |
+| DELETE | `/api/opportunities/[id]` | — | `{ success: true }` |
 
-### `PATCH /api/opportunities/[id]`
-- Body: `Partial<Opportunity>`
-- Update record by id trong JSON file
-- Returns: `Opportunity` (đã update)
+### Clients
 
-### `DELETE /api/opportunities/[id]`
-- Xóa record by id
-- Returns: `{ success: true }`
+| Method | Path | Body | Returns |
+|--------|------|------|---------|
+| GET | `/api/clients` | — | `Client[]` (filter: `?industry=`, `?tag=`, `?search=`) |
+| POST | `/api/clients` | `Omit<Client, 'id' \| 'createdAt'>` | `Client` |
+| GET | `/api/clients/[id]` | — | `Client` |
+| PATCH | `/api/clients/[id]` | `Partial<Client>` | `Client` |
+| DELETE | `/api/clients/[id]` | — | `{ success: true }` |
 
 ---
 
@@ -131,3 +145,12 @@ export async function writeJSON<T>(filename: string, data: T): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 ```
+
+---
+
+## 5. Stores
+
+| File | Store | Key Selectors |
+|------|-------|---------------|
+| `useOpportunityStore.ts` | `opportunities[]` | `useStatsByStatus`, `useMonthlyChartData`, `useForecastRevenue`, `useTopClients`, `useStaleLeads` |
+| `useClientStore.ts` | `clients[]` | `useClientsWithStats(opps)`, `useClientIndustries()`, `useTopClientsByValue(opps, limit)` |

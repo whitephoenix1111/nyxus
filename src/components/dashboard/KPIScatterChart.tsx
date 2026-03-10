@@ -9,7 +9,6 @@ import {
   Tooltip,
   ReferenceLine,
   ResponsiveContainer,
-  TooltipProps,
 } from 'recharts';
 import { MONTH_LABELS, STATUS_COLORS, formatCurrencyFull } from '@/lib/utils';
 import type { OpportunityStatus } from '@/types';
@@ -26,6 +25,7 @@ interface KPIScatterChartProps {
   averageValue: number;
 }
 
+// ── Custom Dot ─────────────────────────────────────────────────
 function CustomDot(props: { cx?: number; cy?: number; payload?: DataPoint }) {
   const { cx, cy, payload } = props;
   if (!cx || !cy || !payload) return null;
@@ -43,26 +43,55 @@ function CustomDot(props: { cx?: number; cy?: number; payload?: DataPoint }) {
   );
 }
 
-function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload as DataPoint;
+// ── Custom Tooltip ─────────────────────────────────────────────
+interface RechartsTooltipPayload {
+  payload: DataPoint;
+}
 
-  const STATUS_VI: Record<OpportunityStatus, string> = {
-    Lead: 'Tiềm năng',
-    Proposal: 'Đề xuất',
-    Forecast: 'Dự báo',
-    Order: 'Đơn hàng',
-  };
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: RechartsTooltipPayload[];
+}
+
+const STATUS_VI: Record<OpportunityStatus, string> = {
+  Lead: 'Tiềm năng',
+  Proposal: 'Đề xuất',
+  Forecast: 'Dự báo',
+  Order: 'Đơn hàng',
+};
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
 
   return (
     <div className="rounded-xl border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm shadow-xl">
-      <p className="font-semibold text-white">{d.clientName}</p>
-      <p className="text-[#DFFF00]">{formatCurrencyFull(d.value)}</p>
-      <p className="text-[#555]">{STATUS_VI[d.status]} · {MONTH_LABELS[d.month]}</p>
+      <p className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+        {d.clientName}
+      </p>
+      <p className="text-[#DFFF00]" style={{ fontFamily: 'var(--font-mono)' }}>
+        {formatCurrencyFull(d.value)}
+      </p>
+      <p className="text-[#555]" style={{ fontFamily: 'var(--font-body)' }}>
+        {STATUS_VI[d.status]} · {MONTH_LABELS[d.month]}
+      </p>
     </div>
   );
 }
 
+// ── Render function tách riêng để tránh inline cast phức tạp ──
+// Double-cast qua unknown trước để bypass readonly + type mismatch
+function renderTooltip(props: unknown) {
+  const p = props as { active?: boolean; payload?: unknown };
+  return (
+    <CustomTooltip
+      active={p.active}
+      payload={p.payload as unknown as RechartsTooltipPayload[]}
+    />
+  );
+}
+
+// ── Chart ──────────────────────────────────────────────────────
 export default function KPIScatterChart({ data, averageValue }: KPIScatterChartProps) {
   const xTicks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
@@ -92,7 +121,7 @@ export default function KPIScatterChart({ data, averageValue }: KPIScatterChartP
             tickLine={false}
             width={36}
           />
-          <Tooltip content={<CustomTooltip />} cursor={false} />
+          <Tooltip content={renderTooltip} cursor={false} />
           <ReferenceLine
             y={averageValue}
             stroke="#DFFF00"
@@ -102,7 +131,9 @@ export default function KPIScatterChart({ data, averageValue }: KPIScatterChartP
           />
           <Scatter
             data={data}
-            shape={(props: unknown) => <CustomDot {...(props as { cx?: number; cy?: number; payload?: DataPoint })} />}
+            shape={(props: unknown) => (
+              <CustomDot {...(props as { cx?: number; cy?: number; payload?: DataPoint })} />
+            )}
           />
         </ScatterChart>
       </ResponsiveContainer>

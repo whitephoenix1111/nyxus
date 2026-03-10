@@ -1,0 +1,382 @@
+[
+  {
+    "id": "cli-001",
+    "name": "Tommy Cox",
+    "company": "Tech Solution, Inc.",
+    "avatar": "TC",
+    "email": "tommy.cox@techsolution.com",
+    "phone": "+1 (415) 882-3301",
+    "industry": "Technology",
+    "country": "USA",
+    "website": "techsolution.com",
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
+    "notes": "Long-term partner. Decision maker is Tommy directly.",
+    "createdAt": "2024-09-15"
+  },
+  {
+    "id": "cli-002",
+    "name": "Elliot Burke",
+    "company": "Quantum Solutions",
+    "avatar": "EB",
+    "email": "e.burke@quantumsol.io",
+    "phone": "+1 (212) 554-7720",
+    "industry": "Technology",
+    "country": "USA",
+    "website": "quantumsol.io",
+    "tags": [
+      "mid-market"
+    ],
+    "notes": "Interested in annual contract. Budget confirmed Q3.",
+    "createdAt": "2024-10-02"
+  },
+  {
+    "id": "cli-003",
+    "name": "Andy Hays",
+    "company": "Nimbus Group",
+    "avatar": "AH",
+    "email": "andy@nimbusgroup.co",
+    "phone": "+44 20 7946 0012",
+    "industry": "Consulting",
+    "country": "UK",
+    "website": "nimbusgroup.co",
+    "tags": [
+      "enterprise"
+    ],
+    "notes": "UK-based. Prefers calls on Thursday afternoons.",
+    "createdAt": "2024-10-18"
+  },
+  {
+    "id": "cli-004",
+    "name": "Anna Mason",
+    "company": "Pinnacle Enterprises",
+    "avatar": "AM",
+    "email": "anna.mason@pinnacle.biz",
+    "phone": "+1 (312) 663-4410",
+    "industry": "Finance",
+    "country": "USA",
+    "website": "pinnacle.biz",
+    "tags": [
+      "mid-market",
+      "warm"
+    ],
+    "notes": "Requested a custom pricing proposal in March.",
+    "createdAt": "2024-11-05"
+  },
+  {
+    "id": "cli-005",
+    "name": "Jason Park",
+    "company": "Vertex Labs",
+    "avatar": "JP",
+    "email": "jpark@vertexlabs.dev",
+    "phone": "+1 (650) 201-8833",
+    "industry": "Technology",
+    "country": "USA",
+    "website": "vertexlabs.dev",
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
+    "notes": "Fast decision cycle. Prefers Slack over email.",
+    "createdAt": "2024-11-20"
+  },
+  {
+    "id": "cli-006",
+    "name": "Chelsea Wong",
+    "company": "Aurora Digital",
+    "avatar": "CW",
+    "email": "chelsea@auroradigital.sg",
+    "phone": "+65 8100 2243",
+    "industry": "Marketing",
+    "country": "Singapore",
+    "website": "auroradigital.sg",
+    "tags": [
+      "new-lead"
+    ],
+    "notes": "Came from LinkedIn outreach. Still evaluating options.",
+    "createdAt": "2025-01-08"
+  },
+  {
+    "id": "cli-007",
+    "name": "Marcus Reid",
+    "company": "Ironclad Corp",
+    "avatar": "MR",
+    "email": "mreid@ironclad.com",
+    "phone": "+1 (713) 445-9901",
+    "industry": "Manufacturing",
+    "country": "USA",
+    "website": "ironclad.com",
+    "tags": [
+      "enterprise",
+      "warm"
+    ],
+    "notes": "Large deal in pipeline. Procurement team involved.",
+    "createdAt": "2024-12-01"
+  },
+  {
+    "id": "cli-008",
+    "name": "Priya Nair",
+    "company": "Solaris Tech",
+    "avatar": "PN",
+    "email": "priya.nair@solaristech.in",
+    "phone": "+91 98765 43210",
+    "industry": "Technology",
+    "country": "India",
+    "website": "solaristech.in",
+    "tags": [
+      "mid-market"
+    ],
+    "notes": "Strong technical team. Needs demo with CTO.",
+    "createdAt": "2025-01-15"
+  },
+  {
+    "id": "cli-010",
+    "name": "Linda Chen",
+    "company": "Horizon Finance",
+    "avatar": "LC",
+    "email": "lchen@horizonfin.com",
+    "phone": "+852 2200 3344",
+    "industry": "Finance",
+    "country": "Hong Kong",
+    "website": "horizonfin.com",
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
+    "notes": "Regulatory compliance is top priority for them.",
+    "createdAt": "2024-09-30"
+  },
+  {
+    "id": "cli-011",
+    "name": "Omar Khalil",
+    "company": "Summit Partners",
+    "avatar": "OK",
+    "email": "omar.khalil@summitpartners.ae",
+    "phone": "+971 50 123 4567",
+    "industry": "Investment",
+    "country": "UAE",
+    "website": "summitpartners.ae",
+    "tags": [
+      "enterprise",
+      "warm"
+    ],
+    "notes": "Seeking regional expansion support. High-value prospect.",
+    "createdAt": "2024-12-10"
+  },
+  {
+    "id": "cli-012",
+    "name": "Sofia Reyes",
+    "company": "Meridian Group",
+    "avatar": "SR",
+    "email": "s.reyes@meridiangroup.mx",
+    "phone": "+52 55 1234 5678",
+    "industry": "Consulting",
+    "country": "Mexico",
+    "website": "meridiangroup.mx",
+    "tags": [
+      "mid-market"
+    ],
+    "notes": "Spanish-speaking account. Follow up after proposal review.",
+    "createdAt": "2025-01-30"
+  },
+  {
+    "id": "cli-013",
+    "name": "Nathan Ford",
+    "company": "ClearPath Inc.",
+    "avatar": "NF",
+    "email": "nford@clearpathsales.com",
+    "phone": "+1 (617) 334-8821",
+    "industry": "SaaS",
+    "country": "USA",
+    "website": "clearpathsales.com",
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
+    "notes": "Closed biggest deal of Q3. Explore upsell opportunities.",
+    "createdAt": "2024-08-20"
+  },
+  {
+    "id": "cli-014",
+    "name": "Isabella Tan",
+    "company": "Nexus Dynamics",
+    "avatar": "IT",
+    "email": "itan@nexusdynamics.com.au",
+    "phone": "+61 2 9000 1234",
+    "industry": "Technology",
+    "country": "Australia",
+    "website": "nexusdynamics.com.au",
+    "tags": [
+      "cold"
+    ],
+    "notes": "Initial interest in April. No response since.",
+    "createdAt": "2025-02-10"
+  },
+  {
+    "id": "cli-015",
+    "name": "Ryan Blake",
+    "company": "Crestwood Consulting",
+    "avatar": "RB",
+    "email": "ryan@crestwoodconsult.com",
+    "phone": "+1 (404) 229-7765",
+    "industry": "Consulting",
+    "country": "USA",
+    "website": "crestwoodconsult.com",
+    "tags": [
+      "warm",
+      "mid-market"
+    ],
+    "notes": "Met at SaaStr 2025. Strong alignment with our product.",
+    "createdAt": "2025-02-28"
+  },
+  {
+    "id": "cli-016",
+    "name": "Nora Kim",
+    "company": "Pathfinder LLC",
+    "avatar": "NK",
+    "email": "nora.kim@pathfinderllc.kr",
+    "phone": "+82 10 3344 5566",
+    "industry": "Logistics",
+    "country": "South Korea",
+    "website": "pathfinderllc.kr",
+    "tags": [
+      "cold",
+      "new-lead"
+    ],
+    "notes": "Low engagement so far. Needs nurturing campaign.",
+    "createdAt": "2025-03-05"
+  },
+  {
+    "id": "cli-017",
+    "name": "Ethan Cross",
+    "company": "Caliber Systems",
+    "avatar": "EC",
+    "email": "ethan.cross@calibersys.com",
+    "phone": "+1 (512) 887-4430",
+    "industry": "Defense",
+    "country": "USA",
+    "website": "calibersys.com",
+    "tags": [
+      "enterprise"
+    ],
+    "notes": "Government procurement rules apply. Long sales cycles.",
+    "createdAt": "2024-10-25"
+  },
+  {
+    "id": "cli-018",
+    "name": "Zara Ahmed",
+    "company": "Vantage Point Co.",
+    "avatar": "ZA",
+    "email": "zara@vantagepointco.com",
+    "phone": "+27 11 567 8901",
+    "industry": "Retail",
+    "country": "South Africa",
+    "website": "vantagepointco.com",
+    "tags": [
+      "warm"
+    ],
+    "notes": "Focused on omnichannel strategy. Demo went well.",
+    "createdAt": "2025-03-18"
+  },
+  {
+    "id": "cli-019",
+    "name": "Leo Martinez",
+    "company": "Dawnlight Agency",
+    "avatar": "LM",
+    "email": "leo@dawnlightagency.es",
+    "phone": "+34 91 234 5678",
+    "industry": "Marketing",
+    "country": "Spain",
+    "website": "dawnlightagency.es",
+    "tags": [
+      "mid-market",
+      "warm"
+    ],
+    "notes": "Creative agency. Looking for a scalable CRM solution.",
+    "createdAt": "2025-04-01"
+  },
+  {
+    "id": "cli-020",
+    "name": "Cassandra Hill",
+    "company": "Basecamp Ventures",
+    "avatar": "CH",
+    "email": "chill@basecampventures.vc",
+    "phone": "+1 (206) 443-2210",
+    "industry": "Venture Capital",
+    "country": "USA",
+    "website": "basecampventures.vc",
+    "tags": [
+      "cold",
+      "new-lead"
+    ],
+    "notes": "VC firm — potential portfolio-wide deal if onboarded.",
+    "createdAt": "2025-04-15"
+  },
+  {
+    "id": "cli-022",
+    "name": "Mia Johansson",
+    "company": "Nordic Bridge AB",
+    "avatar": "MJ",
+    "email": "mia.j@nordicbridge.se",
+    "phone": "+46 8 400 12345",
+    "industry": "Logistics",
+    "country": "Sweden",
+    "website": "nordicbridge.se",
+    "tags": [
+      "mid-market"
+    ],
+    "notes": "Expanding to Baltic states. See if our product fits.",
+    "createdAt": "2025-05-02"
+  },
+  {
+    "id": "cli-023",
+    "name": "Alex Turner",
+    "company": "Redstone Works",
+    "avatar": "AT",
+    "email": "alex@redstoneworks.ca",
+    "phone": "+1 (604) 312-9870",
+    "industry": "Manufacturing",
+    "country": "Canada",
+    "website": "redstoneworks.ca",
+    "tags": [
+      "warm"
+    ],
+    "notes": "Industrial CRM use case. Liked the forecast feature.",
+    "createdAt": "2025-05-15"
+  },
+  {
+    "id": "cli-024",
+    "name": "Hana Suzuki",
+    "company": "Tokyo Bridge Ltd.",
+    "avatar": "HS",
+    "email": "h.suzuki@tokyobridge.jp",
+    "phone": "+81 3 1234 5678",
+    "industry": "Finance",
+    "country": "Japan",
+    "website": "tokyobridge.jp",
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
+    "notes": "Formal relationship. Always use honorifics in communication.",
+    "createdAt": "2024-11-01"
+  },
+  {
+    "id": "cli-025",
+    "name": "Ben Carter",
+    "company": "Edgeworks Studio",
+    "avatar": "BC",
+    "email": "ben@edgeworks.studio",
+    "phone": "+44 7700 900123",
+    "industry": "Design",
+    "country": "UK",
+    "website": "edgeworks.studio",
+    "tags": [
+      "cold"
+    ],
+    "notes": "Creative studio. Budget is limited but potential for referrals.",
+    "createdAt": "2025-06-10"
+  }
+]
