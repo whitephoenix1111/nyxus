@@ -1,26 +1,288 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   NYXUS CRM — DESIGN TOKENS
+   Brand: Black & Lime (#DFFF00)
+   
+   Usage guide:
+   - bg-[--color-*]        → background
+   - text-[--color-*]      → text
+   - border-[--color-*]    → border
+   - Use semantic tokens in components, NOT raw hex values
+   ============================================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* ── TYPOGRAPHY ───────────────────────────────────────── */
+  --font-display:  var(--font-syne);       /* Headings, nav labels, stat numbers */
+  --font-body:     var(--font-geist);      /* Body text, descriptions            */
+  --font-mono:     var(--font-dm-mono);    /* Data values, IDs, code, amounts    */
+  --font-sans:     var(--font-geist);      /* Tailwind default override           */
+
+  /* ── BRAND COLORS ─────────────────────────────────────── */
+  --color-brand:           #DFFF00;        /* Lime — primary accent               */
+  --color-brand-dim:       #b8d400;        /* Lime dimmed — hover states          */
+  --color-brand-muted:     #DFFF0022;      /* Lime 13% opacity — backgrounds      */
+  --color-brand-border:    #DFFF0044;      /* Lime 27% opacity — borders/rings    */
+
+  /* ── NEUTRAL SCALE (9 steps) ──────────────────────────── */
+  --color-neutral-0:       #000000;        /* Page background                     */
+  --color-neutral-50:      #0A0A0A;        /* Subtle background                   */
+  --color-neutral-100:     #111111;        /* Card background                     */
+  --color-neutral-150:     #161616;        /* Card background alt                 */
+  --color-neutral-200:     #1A1A1A;        /* Card hover / active nav             */
+  --color-neutral-300:     #222222;        /* Borders default                     */
+  --color-neutral-400:     #333333;        /* Borders hover / dividers            */
+  --color-neutral-500:     #555555;        /* Muted icons                         */
+  --color-neutral-600:     #888888;        /* Muted text / placeholders           */
+  --color-neutral-700:     #AAAAAA;        /* Secondary text                      */
+  --color-neutral-800:     #CCCCCC;        /* Body text                           */
+  --color-neutral-900:     #FFFFFF;        /* Primary text / headings             */
+
+  /* ── SEMANTIC — STATUS BADGE COLORS ──────────────────── */
+  /* Each status: bg (muted) + text + border */
+  --color-status-lead-bg:       #1A1A1A;
+  --color-status-lead-text:     #AAAAAA;
+  --color-status-lead-border:   #333333;
+
+  --color-status-proposal-bg:   #0D1B2A;
+  --color-status-proposal-text: #5BA3F5;
+  --color-status-proposal-border: #1A3A5C;
+
+  --color-status-forecast-bg:   #1A1400;
+  --color-status-forecast-text: #F5C842;
+  --color-status-forecast-border:#3A3000;
+
+  --color-status-order-bg:      #DFFF0015;
+  --color-status-order-text:    #DFFF00;
+  --color-status-order-border:  #DFFF0044;
+
+  /* ── SEMANTIC — FEEDBACK COLORS ──────────────────────── */
+  --color-success:         #22C55E;        /* Positive delta, confirmed           */
+  --color-success-bg:      #052E16;
+  --color-warning:         #F59E0B;        /* Caution, pending                    */
+  --color-warning-bg:      #1C0A00;
+  --color-danger:          #EF4444;        /* Negative delta, overdue             */
+  --color-danger-bg:       #1C0505;
+  --color-info:            #3B82F6;        /* Neutral info                        */
+  --color-info-bg:         #0A1628;
+
+  /* ── SURFACE TOKENS (semantic aliases) ───────────────── */
+  --color-bg:              var(--color-neutral-0);
+  --color-surface:         var(--color-neutral-100);
+  --color-surface-alt:     var(--color-neutral-150);
+  --color-surface-hover:   var(--color-neutral-200);
+  --color-border:          var(--color-neutral-300);
+  --color-border-hover:    var(--color-neutral-400);
+
+  /* ── TEXT TOKENS (semantic aliases) ──────────────────── */
+  --color-text-primary:    var(--color-neutral-900);
+  --color-text-secondary:  var(--color-neutral-700);
+  --color-text-muted:      var(--color-neutral-600);
+  --color-text-disabled:   var(--color-neutral-500);
+
+  /* ── CHART COLORS ─────────────────────────────────────── */
+  --color-chart-order:     #DFFF00;        /* Dots for Order status               */
+  --color-chart-forecast:  #F5C842;        /* Dots for Forecast                   */
+  --color-chart-proposal:  #5BA3F5;        /* Dots for Proposal                   */
+  --color-chart-lead:      #555555;        /* Dots for Lead (gray, low priority)  */
+  --color-chart-avg-line:  #DFFF0088;      /* ReferenceLine — average             */
+  --color-chart-grid:      #1A1A1A;        /* Grid lines                          */
+  --color-chart-axis:      #444444;        /* Axis labels                         */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+   BASE RESET
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html {
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #000000;
+  color: #FFFFFF;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   TYPOGRAPHY SCALE
+   ============================================================ */
+
+/* Display — dùng cho số liệu lớn (StatCard, KPI) */
+.text-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Mono — dùng cho giá tiền, IDs, data values */
+.text-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Label — dùng cho badge, nav items */
+.text-label {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;   /* 11px */
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   COMPONENT BASE STYLES
+   ============================================================ */
+
+/* Card base */
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.card:hover {
+  border-color: var(--color-border-hover);
+}
+
+/* Brand card — lime accent (active StatCard) */
+.card-brand {
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+  color: #000000;
+}
+
+/* Status badge base */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.badge-lead {
+  background-color: var(--color-status-lead-bg);
+  color: var(--color-status-lead-text);
+  border-color: var(--color-status-lead-border);
+}
+
+.badge-proposal {
+  background-color: var(--color-status-proposal-bg);
+  color: var(--color-status-proposal-text);
+  border-color: var(--color-status-proposal-border);
+}
+
+.badge-forecast {
+  background-color: var(--color-status-forecast-bg);
+  color: var(--color-status-forecast-text);
+  border-color: var(--color-status-forecast-border);
+}
+
+.badge-order {
+  background-color: var(--color-status-order-bg);
+  color: var(--color-status-order-text);
+  border-color: var(--color-status-order-border);
+}
+
+/* ============================================================
+   INTERACTIVE STATES
+   ============================================================ */
+
+/* Focus ring — dùng cho input, button */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Button — primary (brand) */
+.btn-primary {
+  background-color: var(--color-brand);
+  color: #000000;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 100ms ease;
+}
+.btn-primary:hover {
+  background-color: var(--color-brand-dim);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Button — ghost */
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+}
+.btn-ghost:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-hover);
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
+}
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+::selection {
+  background-color: var(--color-brand);
+  color: #000000;
+}
+
+/* ============================================================
+   UTILITY — BRAND GLOW (dùng cho hover chart dots, active elements)
+   ============================================================ */
+.glow-brand {
+  filter: drop-shadow(0 0 6px #DFFF0066);
+}
+
+.glow-brand-strong {
+  filter: drop-shadow(0 0 12px #DFFF00AA);
 }
