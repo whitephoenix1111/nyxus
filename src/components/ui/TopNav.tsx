@@ -5,12 +5,13 @@ import { usePathname } from 'next/navigation';
 import { Search, Plus } from 'lucide-react';
 
 const NAV_LINKS = [
-  { label: 'Tổng quan', href: '/' },
-  { label: 'Tiềm năng', href: '/leads' },
-  { label: 'Cơ hội', href: '/opportunities' },
-  { label: 'Khách hàng', href: '/clients' },
-  { label: 'Dự báo', href: '/forecast' },
-  { label: 'Tài liệu', href: '/documents' },
+  { label: 'Tổng quan',   href: '/' },
+  { label: 'Tiềm năng',   href: '/leads' },
+  { label: 'Cơ hội',      href: '/opportunities' },
+  { label: 'Khách hàng',  href: '/clients' },
+  { label: 'Hoạt động',   href: '/activities' },
+  { label: 'Dự báo',      href: '/forecast' },
+  { label: 'Tài liệu',    href: '/documents' },
 ];
 
 export default function TopNav() {

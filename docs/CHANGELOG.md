@@ -4,6 +4,41 @@
 
 ---
 
+## [0.4.0] — 2026-03-10
+
+### Added — Activities Module (hoàn chỉnh)
+
+#### Data
+- `data/activities.json` — 25 activities, 1 per client, đầy đủ: `type`, `outcome`, `nextAction`, `notes`, `opportunityId`
+
+#### Types (`src/types/index.ts`)
+- Thêm `ActivityType` union: `call | email | meeting | demo | note`
+- Thêm `ActivityOutcome` union: `positive | neutral | negative`
+- Thêm `Activity` interface đầy đủ với denormalized `clientName` và `company`
+
+#### API Routes
+- `GET /api/activities` — filter: `?type=`, `?outcome=`, `?clientId=`, `?search=`, sort mới nhất trước
+- `POST /api/activities`
+- `PATCH /api/activities/[id]`
+- `DELETE /api/activities/[id]`
+
+#### Store (`src/store/useActivityStore.ts`)
+- Zustand store CRUD + optimistic update
+- Selectors: `useActivitiesByType`, `useActivitiesByOutcome`, `useRecentActivities`, `useActivitiesForClient`
+
+#### UI (`src/app/activities/page.tsx`)
+- KPI bar: tổng, tỷ lệ tích cực, breakdown outcome + progress bar màu
+- Timeline grouped by month, sort mới nhất trước
+- Activity card expand/collapse: notes + next action highlight lime
+- Filter: search + type + outcome
+- Modal thêm mới: type selector toggle, validate, date picker
+
+#### Navigation
+- `TopNav.tsx` — thêm link "Hoạt động" → `/activities`
+- `docs/4-features/F07-activities.md` — feature spec mới
+
+---
+
 ## [0.3.0] — 2026-03-10
 
 ### Added — Clients Module (Data Layer hoàn chỉnh)
@@ -31,31 +66,12 @@
 
 #### UI (`src/app/clients/page.tsx`)
 - Wire vào `useClientStore` thật thay vì derive từ Opportunities
-- Thêm **industry filter** (dropdown tiếng Việt)
-- Thêm **tag badges** với màu riêng mỗi tag
-- Detail panel: hiển thị email, phone, website, country, ghi chú, nút xóa
-- **Modal "Thêm khách hàng"**: form đầy đủ, live avatar preview, tag toggle, validate, loading state
+- Thêm industry filter (dropdown tiếng Việt), tag badges
+- Detail panel: email, phone, website, country, ghi chú, nút xóa
+- Modal "Thêm khách hàng": form đầy đủ, live avatar preview, tag toggle, validate
 
-### Added — Design System
-
-#### `src/app/globals.css`
-- Mở rộng neutral scale từ 9 → 11 bước (thêm `550`, `650`, `750`)
-- Thêm 8 semantic text tokens:
-  - `--color-text-primary` (#fff) — heading, số liệu chính
-  - `--color-text-body` (#ccc) — paragraph
-  - `--color-text-secondary` (#aaa) — tên secondary
-  - `--color-text-tertiary` (#999) — placeholder input
-  - `--color-text-muted` (#888) — contact info, meta
-  - `--color-text-subtle` (#777) — company, secondary text
-  - `--color-text-faint` (#666) — label uppercase, caption
-  - `--color-text-disabled` (#555) — icon mờ, disabled
-- Thêm `.input-base` — class chung cho tất cả input (placeholder tự dùng `--color-text-tertiary`)
-- Thêm `.select-base` — class chung cho tất cả select
-
-### Decisions
-- **Client data độc lập** với Opportunities: `clients.json` riêng, join runtime qua `company` name
-- **Không dùng raw hex** trong components — toàn bộ màu qua CSS variable
-- **Industry label** lưu bằng English key, dịch sang tiếng Việt ở UI layer (dễ filter, dễ extend)
+#### Design System
+- `globals.css` — 8 text tokens, `.input-base`, `.select-base`
 
 ---
 
@@ -63,11 +79,11 @@
 
 ### Added
 - Khởi tạo toàn bộ cấu trúc docs (VISION, HLD, LLD, Features)
-- Thêm field `lastContactDate` vào `Opportunity` interface (dùng cho Reminders logic)
-- Định nghĩa 5 selectors trong lld-store.md
+- Thêm field `lastContactDate` vào `Opportunity` interface
+- Định nghĩa selectors trong lld-store.md
 - Chi tiết 6 feature specs (F01–F06)
 
 ### Decisions
-- Backend: JSON file thay vì database (đơn giản, migrate sau)
-- State: Zustand thay vì Redux (ít boilerplate hơn cho team nhỏ)
-- Charts: Recharts thay vì D3 (React-native, dễ maintain)
+- Backend: JSON file thay vì database
+- State: Zustand thay vì Redux
+- Charts: Recharts thay vì D3

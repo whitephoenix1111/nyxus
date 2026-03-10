@@ -30,7 +30,6 @@ export interface Client {
   createdAt: string;
 }
 
-// Derived type — computed by joining Client + Opportunities
 export interface ClientWithStats extends Client {
   totalValue: number;
   opportunityCount: number;
@@ -38,6 +37,28 @@ export interface ClientWithStats extends Client {
   forecastValue: number;
   opportunities: Opportunity[];
 }
+
+// ── Activities ────────────────────────────────────────────────────
+
+export type ActivityType = 'call' | 'email' | 'meeting' | 'demo' | 'note';
+export type ActivityOutcome = 'positive' | 'neutral' | 'negative';
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  title: string;
+  date: string;              // ISO 8601: "2025-07-15"
+  clientId: string;          // ref → clients.json
+  clientName: string;        // denormalized — tránh join mỗi lần render
+  company: string;           // denormalized
+  opportunityId?: string;    // optional ref → opportunities.json
+  outcome: ActivityOutcome;
+  nextAction: string;        // bước tiếp theo cần làm
+  notes: string;
+  createdAt: string;
+}
+
+// ── Misc ──────────────────────────────────────────────────────────
 
 export interface ReminderAlert {
   id: string;
