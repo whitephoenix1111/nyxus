@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { TrendingUp, Plus, X } from 'lucide-react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
+import { useActivityStore } from '@/store/useActivityStore';
 import { useClientStore, useClientsWithStats, useClientIndustries } from '@/store/useClientStore';
 import { formatCurrency } from '@/lib/utils';
 import type { Client } from '@/types';
@@ -14,6 +15,7 @@ import { viIndustry } from './_components/_constants';
 
 export default function ClientsPage() {
   const { opportunities, fetchOpportunities } = useOpportunityStore();
+  const { fetchActivities } = useActivityStore();
   const { clients, isLoading, fetchClients, deleteClient, addClient, updateClient } = useClientStore();
 
   const [search, setSearch] = useState('');
@@ -146,7 +148,14 @@ export default function ClientsPage() {
         <DetailPanel
           client={selectedClient}
           onClose={() => setSelectedClientId(null)}
-          onDelete={id => { deleteClient(id); setSelectedClientId(null); }}
+          onDelete={async id => {
+            const ok = await deleteClient(id);
+            setSelectedClientId(null);
+            if (ok) {
+              fetchOpportunities();
+              fetchActivities();
+            }
+          }}
           onEdit={() => setEditingClient(selectedClient)}
         />
       )}

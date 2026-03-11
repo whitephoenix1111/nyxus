@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
-import type { Client } from '@/types';
+import type { Client, Opportunity, Activity } from '@/types';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,17 +36,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
+// DELETE — cascade xóa opportunities và activities liên kết
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const clients = await readJSON<Client[]>('clients.json');
 
-    const filtered = clients.filter((c) => c.id !== id);
-    if (filtered.length === clients.length) {
+    const [clients, opportunities, activities] = await Promise.all([
+      readJSON<Client[]>('clients.json'),
+      readJSON<Opportunity[]>('opportunities.json'),
+      readJSON<Activity[]>('activities.json'),
+    ]);
+
+    const clientExists = clients.some((c) => c.id === id);
+    if (!clientExists) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    await writeJSON('clients.json', filtered);
+    // Lấy danh sách opportunityId liên kết để xóa activities
+    const linkedOppIds = new Set(
+      opportunities.filter((o) => o.clientId === id).map((o) => o.id)
+    );
+
+    await Promise.all([
+      writeJSON('clients.json',      clients.filter((c) => c.id !== id)),
+      writeJSON('opportunities.json', opportunities.filter((o) => o.clientId !== id)),
+      writeJSON('activities.json',    activities.filter(
+        (a) => a.clientId !== id && !(a.opportunityId && linkedOppIds.has(a.opportunityId))
+      )),
+    ]);
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Failed to delete client' }, { status: 500 });

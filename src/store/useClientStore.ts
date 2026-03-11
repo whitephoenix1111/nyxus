@@ -11,11 +11,10 @@ interface ClientStore {
 
   fetchClients: () => Promise<void>;
   addClient: (data: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
-  // addLead gọi POST /api/leads, nhận về { client, opportunity }
-  // Caller tự append opportunity vào useOpportunityStore
   addLead: (data: { name: string; company: string; email?: string; phone?: string; value: number; notes?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
-  deleteClient: (id: string) => Promise<void>;
+  // Returns true nếu xóa thành công — caller cần tự refetch opportunities & activities
+  deleteClient: (id: string) => Promise<boolean>;
 }
 
 export const useClientStore = create<ClientStore>((set, get) => ({
@@ -48,8 +47,6 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     }
   },
 
-  // Tạo Lead qua /api/leads — tự sinh Client (isProspect: true) + Opportunity (Lead, 15%)
-  // Returns { clientId, opportunityId } để caller append opportunity vào store riêng
   addLead: async (data) => {
     try {
       const res = await fetch('/api/leads', {
@@ -62,7 +59,6 @@ export const useClientStore = create<ClientStore>((set, get) => ({
         return null;
       }
       const { client, opportunity } = await res.json();
-      // Pessimistic: append client sau khi server confirm
       set((s) => ({ clients: [...s.clients, client] }));
       return { clientId: client.id, opportunityId: opportunity.id };
     } catch {
@@ -73,7 +69,6 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   updateClient: async (id, data) => {
     const prev = get().clients;
-    // Optimistic update
     set((s) => ({
       clients: s.clients.map((c) => (c.id === id ? { ...c, ...data } : c)),
     }));
@@ -90,33 +85,33 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   deleteClient: async (id) => {
     const prev = get().clients;
+    // Optimistic: xóa client khỏi UI ngay
     set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }));
     try {
-      await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      return true; // Caller sẽ refetch opportunities & activities
     } catch {
       set({ clients: prev, error: 'Failed to delete client' });
+      return false;
     }
   },
 }));
 
 // ── Selectors ─────────────────────────────────────────────────────
 
-/**
- * Join clients với opportunities bằng clientId (hard FK)
- * opportunities được truyền vào từ useOpportunityStore để tránh circular import
- */
 export function useClientsWithStats(opportunities: Opportunity[]) {
   const clients = useClientStore((s) => s.clients);
 
   return useMemo((): ClientWithStats[] => {
-    return clients.map((client) => {
-      // Join bằng clientId — không join bằng company name
+    // BƯỚC 4: Chỉ hiển thị client thật (isProspect = false)
+    const realClients = clients.filter(c => !c.isProspect);
+    return realClients.map((client) => {
       const clientOpps = opportunities.filter((o) => o.clientId === client.id);
 
       const totalValue    = clientOpps.reduce((sum, o) => sum + o.value, 0);
       const forecastValue = clientOpps.reduce(
-        (sum, o) => sum + o.value * (o.confidence / 100),
-        0
+        (sum, o) => sum + o.value * (o.confidence / 100), 0
       );
 
       const priority = ['Won', 'Negotiation', 'Proposal', 'Qualified', 'Lead', 'Lost'] as const;
@@ -134,7 +129,6 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
   }, [clients, opportunities]);
 }
 
-/** Danh sách industries duy nhất để filter */
 export function useClientIndustries() {
   const clients = useClientStore((s) => s.clients);
   return useMemo(
@@ -143,7 +137,6 @@ export function useClientIndustries() {
   );
 }
 
-/** Top N clients theo totalValue */
 export function useTopClientsByValue(opportunities: Opportunity[], limit = 5) {
   const withStats = useClientsWithStats(opportunities);
   return useMemo(

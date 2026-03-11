@@ -9,7 +9,10 @@
     "industry": "Technology",
     "country": "USA",
     "website": "techsolution.com",
-    "tags": ["enterprise", "priority"],
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
     "notes": "Long-term partner. Decision maker is Tommy directly.",
     "isProspect": false,
     "createdAt": "2024-09-15"
@@ -24,9 +27,11 @@
     "industry": "Technology",
     "country": "USA",
     "website": "quantumsol.io",
-    "tags": ["mid-market"],
+    "tags": [
+      "mid-market"
+    ],
     "notes": "Interested in annual contract. Budget confirmed Q3.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2024-10-02"
   },
   {
@@ -39,7 +44,9 @@
     "industry": "Consulting",
     "country": "UK",
     "website": "nimbusgroup.co",
-    "tags": ["enterprise"],
+    "tags": [
+      "enterprise"
+    ],
     "notes": "UK-based. Prefers calls on Thursday afternoons.",
     "isProspect": false,
     "createdAt": "2024-10-18"
@@ -54,9 +61,12 @@
     "industry": "Finance",
     "country": "USA",
     "website": "pinnacle.biz",
-    "tags": ["mid-market", "warm"],
+    "tags": [
+      "mid-market",
+      "warm"
+    ],
     "notes": "Requested a custom pricing proposal in March.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2024-11-05"
   },
   {
@@ -69,7 +79,10 @@
     "industry": "Technology",
     "country": "USA",
     "website": "vertexlabs.dev",
-    "tags": ["enterprise", "priority"],
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
     "notes": "Fast decision cycle. Prefers Slack over email.",
     "isProspect": false,
     "createdAt": "2024-11-20"
@@ -84,9 +97,11 @@
     "industry": "Marketing",
     "country": "Singapore",
     "website": "auroradigital.sg",
-    "tags": ["new-lead"],
+    "tags": [
+      "new-lead"
+    ],
     "notes": "Came from LinkedIn outreach. Still evaluating options.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-01-08"
   },
   {
@@ -99,9 +114,12 @@
     "industry": "Manufacturing",
     "country": "USA",
     "website": "ironclad.com",
-    "tags": ["enterprise", "warm"],
+    "tags": [
+      "enterprise",
+      "warm"
+    ],
     "notes": "Large deal in pipeline. Procurement team involved.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2024-12-01"
   },
   {
@@ -114,9 +132,11 @@
     "industry": "Technology",
     "country": "India",
     "website": "solaristech.in",
-    "tags": ["mid-market"],
+    "tags": [
+      "mid-market"
+    ],
     "notes": "Strong technical team. Needs demo with CTO.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-01-15"
   },
   {
@@ -129,7 +149,10 @@
     "industry": "Finance",
     "country": "Hong Kong",
     "website": "horizonfin.com",
-    "tags": ["enterprise", "priority"],
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
     "notes": "Regulatory compliance is top priority for them.",
     "isProspect": false,
     "createdAt": "2024-09-30"
@@ -144,9 +167,12 @@
     "industry": "Investment",
     "country": "UAE",
     "website": "summitpartners.ae",
-    "tags": ["enterprise", "warm"],
+    "tags": [
+      "enterprise",
+      "warm"
+    ],
     "notes": "Seeking regional expansion support. High-value prospect.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2024-12-10"
   },
   {
@@ -159,9 +185,11 @@
     "industry": "Consulting",
     "country": "Mexico",
     "website": "meridiangroup.mx",
-    "tags": ["mid-market"],
+    "tags": [
+      "mid-market"
+    ],
     "notes": "Spanish-speaking account. Follow up after proposal review.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-01-30"
   },
   {
@@ -174,7 +202,10 @@
     "industry": "SaaS",
     "country": "USA",
     "website": "clearpathsales.com",
-    "tags": ["enterprise", "priority"],
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
     "notes": "Closed biggest deal of Q3. Explore upsell opportunities.",
     "isProspect": false,
     "createdAt": "2024-08-20"
@@ -189,9 +220,11 @@
     "industry": "Technology",
     "country": "Australia",
     "website": "nexusdynamics.com.au",
-    "tags": ["cold"],
+    "tags": [
+      "cold"
+    ],
     "notes": "Initial interest in April. No response since.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-02-10"
   },
   {
@@ -204,9 +237,12 @@
     "industry": "Consulting",
     "country": "USA",
     "website": "crestwoodconsult.com",
-    "tags": ["warm", "mid-market"],
+    "tags": [
+      "warm",
+      "mid-market"
+    ],
     "notes": "Met at SaaStr 2025. Strong alignment with our product.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-02-28"
   },
   {
@@ -219,9 +255,12 @@
     "industry": "Logistics",
     "country": "South Korea",
     "website": "pathfinderllc.kr",
-    "tags": ["cold", "new-lead"],
+    "tags": [
+      "cold",
+      "new-lead"
+    ],
     "notes": "Low engagement so far. Needs nurturing campaign.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-03-05"
   },
   {
@@ -234,7 +273,9 @@
     "industry": "Defense",
     "country": "USA",
     "website": "calibersys.com",
-    "tags": ["enterprise"],
+    "tags": [
+      "enterprise"
+    ],
     "notes": "Government procurement rules apply. Long sales cycles.",
     "isProspect": false,
     "createdAt": "2024-10-25"
@@ -249,9 +290,11 @@
     "industry": "Retail",
     "country": "South Africa",
     "website": "vantagepointco.com",
-    "tags": ["warm"],
+    "tags": [
+      "warm"
+    ],
     "notes": "Focused on omnichannel strategy. Demo went well.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-03-18"
   },
   {
@@ -264,9 +307,12 @@
     "industry": "Marketing",
     "country": "Spain",
     "website": "dawnlightagency.es",
-    "tags": ["mid-market", "warm"],
+    "tags": [
+      "mid-market",
+      "warm"
+    ],
     "notes": "Creative agency. Looking for a scalable CRM solution.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-04-01"
   },
   {
@@ -279,9 +325,12 @@
     "industry": "Venture Capital",
     "country": "USA",
     "website": "basecampventures.vc",
-    "tags": ["cold", "new-lead"],
+    "tags": [
+      "cold",
+      "new-lead"
+    ],
     "notes": "VC firm — potential portfolio-wide deal if onboarded.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-04-15"
   },
   {
@@ -294,9 +343,11 @@
     "industry": "Logistics",
     "country": "Sweden",
     "website": "nordicbridge.se",
-    "tags": ["mid-market"],
+    "tags": [
+      "mid-market"
+    ],
     "notes": "Expanding to Baltic states. See if our product fits.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-05-02"
   },
   {
@@ -309,9 +360,11 @@
     "industry": "Manufacturing",
     "country": "Canada",
     "website": "redstoneworks.ca",
-    "tags": ["warm"],
+    "tags": [
+      "warm"
+    ],
     "notes": "Industrial CRM use case. Liked the forecast feature.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-05-15"
   },
   {
@@ -324,7 +377,10 @@
     "industry": "Finance",
     "country": "Japan",
     "website": "tokyobridge.jp",
-    "tags": ["enterprise", "priority"],
+    "tags": [
+      "enterprise",
+      "priority"
+    ],
     "notes": "Formal relationship. Always use honorifics in communication.",
     "isProspect": false,
     "createdAt": "2024-11-01"
@@ -339,9 +395,28 @@
     "industry": "Design",
     "country": "UK",
     "website": "edgeworks.studio",
-    "tags": ["cold"],
+    "tags": [
+      "cold"
+    ],
     "notes": "Creative studio. Budget is limited but potential for referrals.",
-    "isProspect": false,
+    "isProspect": true,
     "createdAt": "2025-06-10"
+  },
+  {
+    "id": "cli-c5b21ba3",
+    "name": "Thái Bảo",
+    "company": "fpt",
+    "avatar": "TB",
+    "email": "fpt@gmail.com",
+    "phone": "",
+    "industry": "Unknown",
+    "country": "",
+    "website": "",
+    "tags": [
+      "new-lead"
+    ],
+    "notes": "a1d1a",
+    "isProspect": true,
+    "createdAt": "2026-03-11"
   }
 ]

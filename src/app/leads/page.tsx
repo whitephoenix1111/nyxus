@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, X, AlertTriangle, Search } from 'lucide-react';
+import { Plus, X, AlertTriangle, Search, RotateCcw } from 'lucide-react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useClientStore } from '@/store/useClientStore';
 import { useActivityStore } from '@/store/useActivityStore';
@@ -9,52 +9,76 @@ import { formatCurrencyFull } from '@/lib/utils';
 import type { Opportunity, OpportunityStatus } from '@/types';
 import { LeadModal, emptyLeadForm, type LeadFormState } from '@/components/leads/LeadModal';
 import { PromoteModal } from '@/components/leads/PromoteModal';
-import { LeadCard, daysSince } from '@/components/leads/LeadCard';
+import { LeadCard, LostCard, daysSince } from '@/components/leads/LeadCard';
 
 export default function LeadsPage() {
-  const { opportunities, fetchOpportunities, isLoading, addOpportunity, updateOpportunity, updateStatus, deleteOpportunity } = useOpportunityStore();
-  const { addLead } = useClientStore();
-  const { activities, fetchActivities } = useActivityStore();
+  const { opportunities, fetchOpportunities, isLoading, updateOpportunity, updateStatus, deleteOpportunity } = useOpportunityStore();
+  const { clients, addLead, fetchClients } = useClientStore();
+  const { fetchActivities } = useActivityStore();
 
-  const [search, setSearch]             = useState('');
-  const [showAdd, setShowAdd]           = useState(false);
-  const [editTarget, setEditTarget]     = useState<Opportunity | null>(null);
+  const [search, setSearch]               = useState('');
+  const [tab, setTab]                     = useState<'active' | 'lost'>('active');
+  const [showAdd, setShowAdd]             = useState(false);
+  const [editTarget, setEditTarget]       = useState<Opportunity | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<Opportunity | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [sortStale, setSortStale]       = useState(true);
+  const [sortStale, setSortStale]         = useState(true);
 
   useEffect(() => {
     fetchOpportunities();
     fetchActivities();
-  }, [fetchOpportunities, fetchActivities]);
+    fetchClients();
+  }, [fetchOpportunities, fetchActivities, fetchClients]);
+
+  const ACTIVE_STATUSES = ['Lead', 'Qualified', 'Proposal', 'Negotiation'];
 
   const leads = useMemo(() => {
-    let list = opportunities.filter(o => o.status === 'Lead');
+    let list = opportunities.filter(o =>
+      ACTIVE_STATUSES.includes(o.status) &&
+      clients.find(c => c.id === o.clientId)?.isProspect === true
+    );
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(o => o.clientName.toLowerCase().includes(q) || o.company.toLowerCase().includes(q));
+      list = list.filter(o =>
+        o.clientName.toLowerCase().includes(q) || o.company.toLowerCase().includes(q)
+      );
     }
     if (sortStale) {
-      list = [...list].sort((a, b) => new Date(a.lastContactDate).getTime() - new Date(b.lastContactDate).getTime());
+      list = [...list].sort((a, b) =>
+        new Date(a.lastContactDate).getTime() - new Date(b.lastContactDate).getTime()
+      );
     }
     return list;
-  }, [opportunities, search, sortStale]);
+  }, [opportunities, clients, search, sortStale]);
+
+  const lostLeads = useMemo(() => {
+    let list = opportunities.filter(o =>
+      o.status === 'Lost' &&
+      clients.find(c => c.id === o.clientId)?.isProspect === true
+    );
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(o =>
+        o.clientName.toLowerCase().includes(q) || o.company.toLowerCase().includes(q)
+      );
+    }
+    return [...list].sort((a, b) =>
+      new Date(b.lastContactDate).getTime() - new Date(a.lastContactDate).getTime()
+    );
+  }, [opportunities, clients, search]);
 
   const staleCount = useMemo(() => leads.filter(o => daysSince(o.lastContactDate) > 3).length, [leads]);
   const totalValue = useMemo(() => leads.reduce((s, o) => s + o.value, 0), [leads]);
 
-  // DELTA-3 bước 7: dùng addLead → POST /api/leads → tạo Client + Opportunity đồng thời
   const handleAdd = async (form: LeadFormState) => {
     const result = await addLead({
       name:    form.clientName,
       company: form.company,
+      email:   form.email,       // fix: truyền đúng email
       value:   Number(form.value),
       notes:   form.notes,
     });
-    if (result) {
-      // Fetch lại opportunities để lấy opportunity mới có clientId đúng
-      await fetchOpportunities();
-    }
+    if (result) await fetchOpportunities();
     setShowAdd(false);
   };
 
@@ -71,28 +95,52 @@ export default function LeadsPage() {
     setEditTarget(null);
   };
 
-  // DELTA-3 bước 7: promote gọi updateStatus — confidence tự nhảy về default trong store
   const handlePromote = (status: OpportunityStatus) => {
     if (!promoteTarget) return;
     updateStatus(promoteTarget.id, status);
     setPromoteTarget(null);
   };
 
+  const handleReopen = async (id: string) => {
+    await updateStatus(id, 'Lead');
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] px-6 py-5 overflow-hidden">
+    <div className="flex flex-col px-6 py-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Tiềm năng</h1>
           <p className="text-sm text-[#555] mt-0.5">
-            {leads.length} lead · {formatCurrencyFull(totalValue)} tổng giá trị
-            {staleCount > 0 && <span className="ml-2 text-[#EF4444]">· {staleCount} cần liên hệ</span>}
+            {tab === 'active'
+              ? <>{leads.length} lead · {formatCurrencyFull(totalValue)} tổng giá trị{staleCount > 0 && <span className="ml-2 text-[#EF4444]">· {staleCount} cần liên hệ</span>}</>
+              : <>{lostLeads.length} lead thất bại</>}
           </p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 rounded-xl bg-[#DFFF00] px-4 py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors">
-          <Plus size={15} /> Thêm lead
+        {tab === 'active' && (
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 rounded-xl bg-[#DFFF00] px-4 py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors">
+            <Plus size={15} /> Thêm lead
+          </button>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-4 border-b border-[#1a1a1a]">
+        <button onClick={() => setTab('active')}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            tab === 'active' ? 'border-[#DFFF00] text-[#DFFF00]' : 'border-transparent text-[#555] hover:text-[#888]'
+          }`}>
+          Đang theo dõi
+          {leads.length > 0 && <span className="ml-1.5 rounded-full bg-[#1a1a1a] px-1.5 py-0.5 text-xs">{leads.length}</span>}
+        </button>
+        <button onClick={() => setTab('lost')}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            tab === 'lost' ? 'border-[#EF4444] text-[#EF4444]' : 'border-transparent text-[#555] hover:text-[#888]'
+          }`}>
+          Lưu trữ
+          {lostLeads.length > 0 && <span className="ml-1.5 rounded-full bg-[#1a1a1a] px-1.5 py-0.5 text-xs">{lostLeads.length}</span>}
         </button>
       </div>
 
@@ -111,12 +159,14 @@ export default function LeadsPage() {
             </button>
           )}
         </div>
-        <button onClick={() => setSortStale(s => !s)}
-          className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-            sortStale ? 'border-[#DFFF0044] bg-[#DFFF0010] text-[#DFFF00]' : 'border-[#222] text-[#555] hover:text-[#888]'
-          }`}>
-          <AlertTriangle size={12} /> Ưu tiên nguội nhất
-        </button>
+        {tab === 'active' && (
+          <button onClick={() => setSortStale(s => !s)}
+            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
+              sortStale ? 'border-[#DFFF0044] bg-[#DFFF0010] text-[#DFFF00]' : 'border-[#222] text-[#555] hover:text-[#888]'
+            }`}>
+            <AlertTriangle size={12} /> Ưu tiên nguội nhất
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -124,31 +174,55 @@ export default function LeadsPage() {
         <div className="flex flex-1 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1a1a1a] border-t-[#DFFF00]" />
         </div>
-      ) : leads.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#111]">
-            <span className="text-2xl text-[#DFFF00]">◱</span>
+      ) : tab === 'active' ? (
+        leads.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#111]">
+              <span className="text-2xl text-[#DFFF00]">◱</span>
+            </div>
+            <p className="text-white font-medium">Chưa có lead nào</p>
+            <p className="mt-1 text-sm text-[#555]">Bắt đầu bằng cách thêm lead đầu tiên.</p>
           </div>
-          <p className="text-white font-medium">Chưa có lead nào</p>
-          <p className="mt-1 text-sm text-[#555]">Bắt đầu bằng cách thêm lead đầu tiên.</p>
-        </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {leads.map(opp => (
+                <LeadCard
+                  key={opp.id}
+                  opp={opp}
+                  deleteConfirm={deleteConfirm}
+                  onPromote={setPromoteTarget}
+                  onEdit={setEditTarget}
+                  onDeleteRequest={setDeleteConfirm}
+                  onDeleteConfirm={async id => { await deleteOpportunity(id); fetchClients(); setDeleteConfirm(null); }}
+                  onDeleteCancel={() => setDeleteConfirm(null)}
+                />
+              ))}
+            </div>
+          </div>
+        )
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {leads.map(opp => (
-              <LeadCard
-                key={opp.id}
-                opp={opp}
-                deleteConfirm={deleteConfirm}
-                onPromote={setPromoteTarget}
-                onEdit={setEditTarget}
-                onDeleteRequest={setDeleteConfirm}
-                onDeleteConfirm={id => { deleteOpportunity(id); setDeleteConfirm(null); }}
-                onDeleteCancel={() => setDeleteConfirm(null)}
-              />
-            ))}
+        lostLeads.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#111]">
+              <span className="text-2xl text-[#555]">◱</span>
+            </div>
+            <p className="text-white font-medium">Không có lead thất bại nào</p>
+            <p className="mt-1 text-sm text-[#555]">Các lead bị đánh dấu Thất bại sẽ xuất hiện ở đây.</p>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {lostLeads.map(opp => (
+                <LostCard
+                  key={opp.id}
+                  opp={opp}
+                  onReopen={handleReopen}
+                />
+              ))}
+            </div>
+          </div>
+        )
       )}
 
       {/* Modals */}
@@ -160,11 +234,16 @@ export default function LeadsPage() {
         <LeadModal
           title="Chỉnh sửa lead"
           initial={{
-            clientName: editTarget.clientName, company: editTarget.company,
-            avatar: editTarget.avatar, value: String(editTarget.value),
-            confidence: String(editTarget.confidence), date: editTarget.date,
+            clientName:      editTarget.clientName,
+            company:         editTarget.company,
+            avatar:          editTarget.avatar,
+            email:           '',
+            value:           String(editTarget.value),
+            confidence:      String(editTarget.confidence),
+            date:            editTarget.date,
             lastContactDate: editTarget.lastContactDate,
-            notes: editTarget.notes ?? '', status: editTarget.status,
+            notes:           editTarget.notes ?? '',
+            status:          editTarget.status,
           }}
           onClose={() => setEditTarget(null)} onSave={handleEdit}
         />
