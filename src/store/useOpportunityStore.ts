@@ -2,14 +2,15 @@
 
 import { create } from 'zustand';
 import { useMemo } from 'react';
-import type { Opportunity, OpportunityStatus } from '@/types';
+import type { Activity, Opportunity, OpportunityStatus } from '@/types';
+import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
 interface OpportunityStore {
   opportunities: Opportunity[];
   isLoading: boolean;
   error: string | null;
   fetchOpportunities: () => Promise<void>;
-  addOpportunity: (data: Omit<Opportunity, 'id'>) => Promise<void>;
+  addOpportunity: (opp: Opportunity) => void;
   updateStatus: (id: string, status: OpportunityStatus) => Promise<void>;
   updateOpportunity: (id: string, data: Partial<Opportunity>) => Promise<void>;
   deleteOpportunity: (id: string) => Promise<void>;
@@ -31,33 +32,26 @@ export const useOpportunityStore = create<OpportunityStore>((set, get) => ({
     }
   },
 
-  addOpportunity: async (data) => {
-    try {
-      const res = await fetch('/api/opportunities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const newOpp: Opportunity = await res.json();
-      set((s) => ({ opportunities: [...s.opportunities, newOpp] }));
-    } catch {
-      set({ error: 'Failed to add' });
-    }
+  // Dùng khi /api/leads trả về opportunity đã tạo sẵn — chỉ append vào state
+  addOpportunity: (opp) => {
+    set((s) => ({ opportunities: [...s.opportunities, opp] }));
   },
 
   updateStatus: async (id, status) => {
     const prev = get().opportunities;
-    // Optimistic update
+    // Optimistic — confidence nhảy về default stage mới
     set((s) => ({
       opportunities: s.opportunities.map((o) =>
-        o.id === id ? { ...o, status } : o
+        o.id === id
+          ? { ...o, status, confidence: STAGE_DEFAULT_CONFIDENCE[status] }
+          : o
       ),
     }));
     try {
       await fetch(`/api/opportunities/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, confidence: STAGE_DEFAULT_CONFIDENCE[status] }),
       });
     } catch {
       set({ opportunities: prev, error: 'Failed to update status' });
@@ -118,12 +112,12 @@ export function useMonthlyChartData() {
   const opps = useOpportunityStore((s) => s.opportunities);
   return useMemo(() =>
     opps.map((o) => ({
-      month: new Date(o.date).getMonth(),
-      value: o.value,
-      date: o.date,
-      status: o.status,
+      month:      new Date(o.date).getMonth(),
+      value:      o.value,
+      date:       o.date,
+      status:     o.status,
       clientName: o.clientName,
-      id: o.id,
+      id:         o.id,
     })),
     [opps]
   );
@@ -141,7 +135,7 @@ export function useForecastRevenue() {
   const opps = useOpportunityStore((s) => s.opportunities);
   return useMemo(() =>
     opps
-      .filter(o => o.status !== 'Lost')
+      .filter((o) => o.status !== 'Lost')
       .reduce((sum, o) => sum + o.value * (o.confidence / 100), 0),
     [opps]
   );
@@ -155,68 +149,115 @@ export function useTopClients(limit = 25) {
   );
 }
 
-export function useStaleLeads(days = 3) {
+// status ∈ [Lead, Qualified, Proposal], lastContactDate > N ngày, không có pending task
+// activities được truyền vào để tránh circular import giữa stores
+export function useStaleLeads(activities: Activity[], days = 3) {
   const opps = useOpportunityStore((s) => s.opportunities);
   return useMemo(() => {
+    const now       = Date.now();
     const threshold = days * 24 * 60 * 60 * 1000;
+    const staleStatuses: OpportunityStatus[] = ['Lead', 'Qualified', 'Proposal'];
+
+    return opps.filter((opp) => {
+      if (!staleStatuses.includes(opp.status)) return false;
+      if (now - new Date(opp.lastContactDate).getTime() <= threshold) return false;
+
+      // Loại nếu có nextActionDate còn trong tương lai (pending task đã lên lịch)
+      const hasPendingTask = activities.some(
+        (a) =>
+          a.opportunityId === opp.id &&
+          a.nextActionDate &&
+          new Date(a.nextActionDate).getTime() >= now
+      );
+      return !hasPendingTask;
+    });
+  }, [opps, activities, days]);
+}
+
+// activity.nextActionDate đã quá hạn && opportunity không có activity mới hơn sau due date
+// activities được truyền vào để tránh circular import
+export function useOverdueTasks(activities: Activity[]) {
+  const opps = useOpportunityStore((s) => s.opportunities);
+  return useMemo(() => {
     const now = Date.now();
+    const results: Array<{ activity: Activity; opportunity: Opportunity }> = [];
+
+    activities.forEach((act) => {
+      if (!act.nextActionDate) return;
+      if (new Date(act.nextActionDate).getTime() >= now) return; // chưa đến hạn
+      if (!act.opportunityId) return;
+
+      const opp = opps.find((o) => o.id === act.opportunityId);
+      if (!opp || opp.status === 'Won' || opp.status === 'Lost') return;
+
+      // Kiểm tra có activity mới hơn nextActionDate không — tức là task đã được xử lý
+      const hasNewerActivity = activities.some(
+        (a) =>
+          a.opportunityId === opp.id &&
+          a.id !== act.id &&
+          new Date(a.date).getTime() > new Date(act.nextActionDate!).getTime()
+      );
+      if (hasNewerActivity) return;
+
+      results.push({ activity: act, opportunity: opp });
+    });
+
+    return results.sort(
+      (a, b) =>
+        new Date(a.activity.nextActionDate!).getTime() -
+        new Date(b.activity.nextActionDate!).getTime()
+    );
+  }, [opps, activities]);
+}
+
+// status = Proposal, lastContactDate > N ngày
+export function useExpiringProposals(days = 14) {
+  const opps = useOpportunityStore((s) => s.opportunities);
+  return useMemo(() => {
+    const now       = Date.now();
+    const threshold = days * 24 * 60 * 60 * 1000;
     return opps.filter(
       (o) =>
-        (o.status === 'Lead' || o.status === 'Qualified') &&
+        o.status === 'Proposal' &&
         now - new Date(o.lastContactDate).getTime() > threshold
     );
   }, [opps, days]);
 }
 
-export function useReminders() {
-  const staleLeads = useStaleLeads(3);
-  const noContact  = useNoContactLeads(7);
-  const opps       = useOpportunityStore(s => s.opportunities);
+// Tổng hợp 3 loại reminder cho Dashboard widget
+// activities được truyền vào từ useActivityStore ở component — tránh circular import
+export function useReminders(activities: Activity[]) {
+  const staleLeads        = useStaleLeads(activities, 3);
+  const overdueTasks      = useOverdueTasks(activities);
+  const expiringProposals = useExpiringProposals(14);
 
   return useMemo(() => {
-    const now = Date.now();
-    const expiringProposals = opps.filter(o =>
-      (o.status === 'Proposal' || o.status === 'Negotiation') &&
-      now - new Date(o.date).getTime() > 14 * 24 * 60 * 60 * 1000
-    );
-
     const alerts = [];
 
-    if (staleLeads.length > 0) alerts.push({
-      id: 'stale_lead',
-      type: 'stale_lead' as const,
-      count: staleLeads.length,
-      label: 'Leads chưa có hoạt động',
-      description: `${staleLeads.length} lead không có liên hệ trong 3 ngày qua`,
+    if (overdueTasks.length > 0) alerts.push({
+      id:          'overdue_task',
+      type:        'overdue_task' as const,
+      count:       overdueTasks.length,
+      label:       'Tasks quá hạn',
+      description: `${overdueTasks.length} task chưa được xử lý sau deadline`,
     });
 
-    if (noContact.length > 0) alerts.push({
-      id: 'no_contact',
-      type: 'no_contact' as const,
-      count: noContact.length,
-      label: 'Chưa liên hệ gần đây',
-      description: `${noContact.length} cơ hội không có liên hệ trong 7 ngày`,
+    if (staleLeads.length > 0) alerts.push({
+      id:          'stale_deal',
+      type:        'stale_deal' as const,
+      count:       staleLeads.length,
+      label:       'Deals không có hoạt động',
+      description: `${staleLeads.length} deal không có liên hệ trong 3 ngày`,
     });
 
     if (expiringProposals.length > 0) alerts.push({
-      id: 'expiring_proposal',
-      type: 'expiring_proposal' as const,
-      count: expiringProposals.length,
-      label: 'Đề xuất sắp hết hạn',
-      description: `${expiringProposals.length} đề xuất đã mở quá 14 ngày`,
+      id:          'expiring_proposal',
+      type:        'expiring_proposal' as const,
+      count:       expiringProposals.length,
+      label:       'Proposals sắp hết hạn',
+      description: `${expiringProposals.length} proposal đã mở quá 14 ngày`,
     });
 
     return alerts;
-  }, [staleLeads, noContact, opps]);
-}
-
-export function useNoContactLeads(days = 7) {
-  const opps = useOpportunityStore((s) => s.opportunities);
-  return useMemo(() => {
-    const threshold = days * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    return opps.filter(
-      (o) => now - new Date(o.lastContactDate).getTime() > threshold
-    );
-  }, [opps, days]);
+  }, [overdueTasks, staleLeads, expiringProposals]);
 }

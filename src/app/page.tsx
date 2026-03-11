@@ -13,30 +13,41 @@ import {
   useMonthlyChartData,
   useAverageValue,
   useTopClients,
-  useStaleLeads,
-  useNoContactLeads,
+  useReminders,
 } from '@/store/useOpportunityStore';
+import { useActivityStore } from '@/store/useActivityStore';
 
 const SALES_TABS = ['Tất cả', 'Giao dịch', 'Công cụ', 'Báo cáo'];
 const FILTER_ICONS = [Clock, Users, Phone, Timer, MessageSquare, List, Calendar];
 
+// Màu accent cho từng loại reminder
+const REMINDER_ACCENT: Record<string, string> = {
+  overdue_task:       '#EF4444',
+  stale_deal:         '#F5C842',
+  expiring_proposal:  '#F5A742',
+};
+
 export default function DashboardPage() {
   const { fetchOpportunities, isLoading } = useOpportunityStore();
+  // DELTA-3 bước 9: fetch activities để selectors nhận đúng dữ liệu
+  const { activities, fetchActivities } = useActivityStore();
   const [activeTab, setActiveTab] = useState('Tất cả');
+
   const { counts, values } = useStatsByStatus();
-  const chartData = useMonthlyChartData();
-  const avgValue = useAverageValue();
+  const chartData  = useMonthlyChartData();
+  const avgValue   = useAverageValue();
   const topClients = useTopClients(25);
-  const staleLeads = useStaleLeads(3);
-  const noContact = useNoContactLeads(7);
+  // DELTA-3 bước 9: useReminders nhận activities làm tham số
+  const reminders  = useReminders(activities);
 
   useEffect(() => {
     fetchOpportunities();
-  }, [fetchOpportunities]);
+    fetchActivities(); // DELTA-3 bước 9
+  }, [fetchOpportunities, fetchActivities]);
 
   const totalSales = values.Won;
   const openQuotes = counts.Proposal + counts.Negotiation;
-  const totalOpps = counts.Lead + counts.Qualified + counts.Proposal + counts.Negotiation;
+  const totalOpps  = counts.Lead + counts.Qualified + counts.Proposal + counts.Negotiation;
 
   if (isLoading) {
     return (
@@ -51,7 +62,8 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-[calc(100vh-56px)] overflow-hidden">
-      {/* ── Nội dung chính ───────────────────────────────── */}
+
+      {/* ── Nội dung chính ────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-y-auto px-6 py-5 min-w-0">
         <h1 className="text-2xl font-bold text-white mb-5">Tổng quan</h1>
 
@@ -68,31 +80,21 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-1">
               {SALES_TABS.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
+                <button key={tab} onClick={() => setActiveTab(tab)}
                   className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                    activeTab === tab
-                      ? 'bg-[#1a1a1a] text-white'
-                      : 'text-[#555] hover:text-[#888]'
-                  }`}
-                >
+                    activeTab === tab ? 'bg-[#1a1a1a] text-white' : 'text-[#555] hover:text-[#888]'
+                  }`}>
                   {tab}
                 </button>
               ))}
             </div>
             <div className="flex items-center gap-2">
-              {/* Bộ lọc icon */}
               <div className="flex items-center gap-1 border-r border-[#222] pr-2 mr-1">
                 {FILTER_ICONS.map((Icon, i) => (
-                  <button
-                    key={i}
+                  <button key={i}
                     className={`rounded-full p-2 transition-all ${
-                      i === 0
-                        ? 'bg-white text-black'
-                        : 'text-[#555] hover:bg-[#1a1a1a] hover:text-white'
-                    }`}
-                  >
+                      i === 0 ? 'bg-white text-black' : 'text-[#555] hover:bg-[#1a1a1a] hover:text-white'
+                    }`}>
                     <Icon size={14} />
                   </button>
                 ))}
@@ -106,18 +108,13 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Phần KPI */}
           <div>
             <h2 className="text-lg font-semibold text-white mb-4">Chỉ số hiệu suất chính</h2>
             <div className="flex gap-4">
               <div className="flex-1 min-w-0">
                 <KPIScatterChart data={chartData} averageValue={avgValue} />
               </div>
-              <KPISummary
-                totalSales={totalSales}
-                openQuotes={openQuotes}
-                opportunities={totalOpps}
-              />
+              <KPISummary totalSales={totalSales} openQuotes={openQuotes} opportunities={totalOpps} />
             </div>
           </div>
         </div>
@@ -125,22 +122,26 @@ export default function DashboardPage() {
 
       {/* ── Cột bên phải ─────────────────────────────────── */}
       <aside className="w-80 shrink-0 border-l border-[#111] overflow-y-auto px-4 py-5">
-        {/* Nhắc nhở */}
+
+        {/* DELTA-3 bước 9: 3 reminder cards từ useReminders */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white mb-3">Nhắc nhở</h2>
           <div className="flex flex-col gap-3">
-            <ReminderCard
-              count={staleLeads.length}
-              label="Lead nguội"
-              description="Khách hàng tiềm năng chưa có hoạt động trong hơn 3 ngày"
-              accentColor="#DFFF00"
-            />
-            <ReminderCard
-              count={noContact.length}
-              label="Chưa liên hệ"
-              description="Liên hệ chưa có hoạt động bán hàng trong 7 ngày qua"
-              accentColor="#F59E0B"
-            />
+            {reminders.length === 0 ? (
+              <div className="rounded-2xl border border-[#1a1a1a] bg-[#111] px-4 py-3">
+                <p className="text-sm text-[#555]">Không có nhắc nhở nào.</p>
+              </div>
+            ) : (
+              reminders.map(r => (
+                <ReminderCard
+                  key={r.id}
+                  count={r.count}
+                  label={r.label}
+                  description={r.description}
+                  accentColor={REMINDER_ACCENT[r.type] ?? '#DFFF00'}
+                />
+              ))
+            )}
           </div>
         </div>
 

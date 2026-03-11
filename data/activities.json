@@ -10,6 +10,7 @@
     "opportunityId": "opp-001",
     "outcome": "positive",
     "nextAction": "Gửi hợp đồng để ký",
+    "nextActionDate": "2025-01-12",
     "notes": "Khách hàng đồng ý với mức giá. Cần gửi hợp đồng trước ngày 12/01.",
     "createdAt": "2025-01-08"
   },
@@ -24,6 +25,7 @@
     "opportunityId": "opp-002",
     "outcome": "neutral",
     "nextAction": "Follow up sau 3 ngày nếu chưa phản hồi",
+    "nextActionDate": "2025-02-23",
     "notes": "Đã gửi PDF proposal 12 trang. Chờ phản hồi từ team kỹ thuật của họ.",
     "createdAt": "2025-02-20"
   },
@@ -38,6 +40,7 @@
     "opportunityId": "opp-003",
     "outcome": "positive",
     "nextAction": "Chuẩn bị onboarding plan",
+    "nextActionDate": "2025-03-10",
     "notes": "Demo thành công. CTO rất ấn tượng với tính năng forecast. Deal gần như chắc chắn.",
     "createdAt": "2025-03-04"
   },
@@ -52,6 +55,7 @@
     "opportunityId": "opp-004",
     "outcome": "neutral",
     "nextAction": "Làm lại bảng giá theo yêu cầu",
+    "nextActionDate": "2026-03-05",
     "notes": "Anna muốn giảm 15% cho hợp đồng 12 tháng. Cần xin phê duyệt nội bộ.",
     "createdAt": "2025-03-10"
   },
@@ -66,6 +70,7 @@
     "opportunityId": "opp-005",
     "outcome": "positive",
     "nextAction": "Gửi tài liệu API và sandbox credentials",
+    "nextActionDate": "2025-04-05",
     "notes": "Dev team rất hào hứng. Jason muốn triển khai trong tháng 4.",
     "createdAt": "2025-04-01"
   },
@@ -80,6 +85,7 @@
     "opportunityId": "opp-006",
     "outcome": "neutral",
     "nextAction": "Gọi điện sau 1 tuần nếu không phản hồi",
+    "nextActionDate": "2025-01-19",
     "notes": "Email giới thiệu sản phẩm. Chưa có phản hồi.",
     "createdAt": "2025-01-12"
   },
@@ -94,6 +100,7 @@
     "opportunityId": "opp-007",
     "outcome": "positive",
     "nextAction": "Chuẩn bị RFP response",
+    "nextActionDate": "2026-03-14",
     "notes": "Gặp được cả CFO lẫn Head of Procurement. Budget đã được phê duyệt.",
     "createdAt": "2025-05-06"
   },
@@ -108,6 +115,7 @@
     "opportunityId": "opp-008",
     "outcome": "neutral",
     "nextAction": "Lên lịch technical demo riêng cho CTO",
+    "nextActionDate": "2026-03-01",
     "notes": "CTO có nhiều câu hỏi về security và data residency. Cần chuẩn bị tài liệu compliance.",
     "createdAt": "2025-05-15"
   },
@@ -136,6 +144,7 @@
     "opportunityId": "opp-010",
     "outcome": "positive",
     "nextAction": "Chuẩn bị upsell proposal cho module Compliance",
+    "nextActionDate": "2025-06-20",
     "notes": "Linda rất hài lòng với kết quả Q2. Mở cửa cho upsell thêm module mới.",
     "createdAt": "2025-06-13"
   },
@@ -150,6 +159,7 @@
     "opportunityId": "opp-011",
     "outcome": "positive",
     "nextAction": "Gửi case study về regional expansion",
+    "nextActionDate": "2026-03-18",
     "notes": "Omar muốn mở rộng sang Egypt và Saudi Arabia. Deal có thể lên đến $200k nếu thành công.",
     "createdAt": "2025-07-01"
   },
@@ -164,6 +174,7 @@
     "opportunityId": "opp-012",
     "outcome": "neutral",
     "nextAction": "Đặt lịch call để review proposal mới",
+    "nextActionDate": "2026-03-03",
     "notes": "Sofia yêu cầu điều chỉnh scope. Đã cập nhật và gửi lại bản v2.",
     "createdAt": "2025-07-08"
   },
@@ -192,6 +203,7 @@
     "opportunityId": "opp-014",
     "outcome": "neutral",
     "nextAction": "Chờ phản hồi. Nếu không có sau 2 tuần thì archive.",
+    "nextActionDate": "2025-08-13",
     "notes": "Gửi email với case study mới liên quan đến ngành của họ. Chờ xem.",
     "createdAt": "2025-07-30"
   },
@@ -206,6 +218,7 @@
     "opportunityId": "opp-015",
     "outcome": "positive",
     "nextAction": "Gửi pricing options cho 3 gói",
+    "nextActionDate": "2026-03-20",
     "notes": "Ryan mang theo CEO và CFO vào demo. Rất tích cực. Họ so sánh với 2 vendor khác.",
     "createdAt": "2025-08-17"
   },
@@ -220,6 +233,7 @@
     "opportunityId": "opp-016",
     "outcome": "neutral",
     "nextAction": "Gửi brochure và theo dõi sau 2 tuần",
+    "nextActionDate": "2025-06-03",
     "notes": "Nora lịch sự nhưng không mặn mà. Có thể timing chưa phù hợp.",
     "createdAt": "2025-05-20"
   },
@@ -234,6 +248,7 @@
     "opportunityId": "opp-017",
     "outcome": "positive",
     "nextAction": "Hoàn thiện security documentation cho procurement",
+    "nextActionDate": "2025-09-25",
     "notes": "Ethan confirm deal. Đang chờ security review từ IT department.",
     "createdAt": "2025-09-14"
   },
@@ -248,6 +263,7 @@
     "opportunityId": "opp-018",
     "outcome": "positive",
     "nextAction": "Gửi implementation timeline",
+    "nextActionDate": "2026-03-25",
     "notes": "Demo rất thành công. Zara đặc biệt thích tính năng real-time sync.",
     "createdAt": "2025-09-28"
   },
@@ -262,6 +278,7 @@
     "opportunityId": "opp-019",
     "outcome": "neutral",
     "nextAction": "Tìm hiểu thêm tech stack hiện tại của họ",
+    "nextActionDate": "2026-03-07",
     "notes": "Leo muốn solution có thể scale từ 5 lên 50 users. Đang evaluate 2-3 options.",
     "createdAt": "2025-10-18"
   },
@@ -276,6 +293,7 @@
     "opportunityId": "opp-020",
     "outcome": "neutral",
     "nextAction": "Follow up qua LinkedIn sau 1 tuần",
+    "nextActionDate": "2025-07-08",
     "notes": "VC firm — nếu onboard được sẽ có cơ hội tiếp cận cả portfolio companies.",
     "createdAt": "2025-07-01"
   },
@@ -290,6 +308,7 @@
     "opportunityId": "opp-021",
     "outcome": "positive",
     "nextAction": "Lên lịch QBR cho Q1 2026",
+    "nextActionDate": "2026-01-15",
     "notes": "Victor gia hạn thêm 2 năm và upgrade lên tier cao hơn. Deal lớn nhất năm.",
     "createdAt": "2025-11-13"
   },
@@ -304,6 +323,7 @@
     "opportunityId": "opp-022",
     "outcome": "neutral",
     "nextAction": "Chuẩn bị localization plan cho Estonia và Latvia",
+    "nextActionDate": "2026-03-02",
     "notes": "Mia muốn biết chúng ta có thể support multi-language và multi-currency không.",
     "createdAt": "2025-11-25"
   },
@@ -318,6 +338,7 @@
     "opportunityId": "opp-023",
     "outcome": "positive",
     "nextAction": "Gửi pricing và bắt đầu negotiation",
+    "nextActionDate": "2025-12-15",
     "notes": "COO rất ấn tượng với dashboard forecast. Alex muốn close trước cuối năm.",
     "createdAt": "2025-12-08"
   },
@@ -332,6 +353,7 @@
     "opportunityId": "opp-024",
     "outcome": "positive",
     "nextAction": "Gửi bản hợp đồng đã điều chỉnh theo luật Nhật",
+    "nextActionDate": "2025-12-24",
     "notes": "Buổi họp rất formal. Hana cần review thêm với legal team. Dự kiến ký trong tuần.",
     "createdAt": "2025-12-17"
   },
@@ -346,6 +368,7 @@
     "opportunityId": "opp-025",
     "outcome": "negative",
     "nextAction": "Liên hệ lại vào tháng 4/2026 khi họ có budget mới",
+    "nextActionDate": "2026-04-01",
     "notes": "Ben thích sản phẩm nhưng budget hiện tại không đủ. Có tiềm năng referral cho các studio khác.",
     "createdAt": "2025-08-15"
   }

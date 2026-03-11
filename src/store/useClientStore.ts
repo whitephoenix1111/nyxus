@@ -11,6 +11,9 @@ interface ClientStore {
 
   fetchClients: () => Promise<void>;
   addClient: (data: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  // addLead gọi POST /api/leads, nhận về { client, opportunity }
+  // Caller tự append opportunity vào useOpportunityStore
+  addLead: (data: { name: string; company: string; email?: string; phone?: string; value: number; notes?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
 }
@@ -45,6 +48,29 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     }
   },
 
+  // Tạo Lead qua /api/leads — tự sinh Client (isProspect: true) + Opportunity (Lead, 15%)
+  // Returns { clientId, opportunityId } để caller append opportunity vào store riêng
+  addLead: async (data) => {
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        set({ error: 'Failed to create lead' });
+        return null;
+      }
+      const { client, opportunity } = await res.json();
+      // Pessimistic: append client sau khi server confirm
+      set((s) => ({ clients: [...s.clients, client] }));
+      return { clientId: client.id, opportunityId: opportunity.id };
+    } catch {
+      set({ error: 'Failed to create lead' });
+      return null;
+    }
+  },
+
   updateClient: async (id, data) => {
     const prev = get().clients;
     // Optimistic update
@@ -76,29 +102,25 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 // ── Selectors ─────────────────────────────────────────────────────
 
 /**
- * Join clients với opportunities để tạo ClientWithStats
- * opportunities được truyền vào từ useOpportunityStore
+ * Join clients với opportunities bằng clientId (hard FK)
+ * opportunities được truyền vào từ useOpportunityStore để tránh circular import
  */
 export function useClientsWithStats(opportunities: Opportunity[]) {
   const clients = useClientStore((s) => s.clients);
 
   return useMemo((): ClientWithStats[] => {
     return clients.map((client) => {
-      // Match by company name (case-insensitive) vì opportunities không có clientId
-      const clientOpps = opportunities.filter(
-        (o) => o.company.trim().toLowerCase() === client.company.trim().toLowerCase()
-      );
+      // Join bằng clientId — không join bằng company name
+      const clientOpps = opportunities.filter((o) => o.clientId === client.id);
 
-      const totalValue = clientOpps.reduce((sum, o) => sum + o.value, 0);
+      const totalValue    = clientOpps.reduce((sum, o) => sum + o.value, 0);
       const forecastValue = clientOpps.reduce(
         (sum, o) => sum + o.value * (o.confidence / 100),
         0
       );
 
-      // topStatus = highest priority status
       const priority = ['Won', 'Negotiation', 'Proposal', 'Qualified', 'Lead', 'Lost'] as const;
-      const topStatus =
-        priority.find((s) => clientOpps.some((o) => o.status === s)) ?? null;
+      const topStatus = priority.find((s) => clientOpps.some((o) => o.status === s)) ?? null;
 
       return {
         ...client,
