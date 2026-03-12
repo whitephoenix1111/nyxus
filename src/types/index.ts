@@ -94,6 +94,26 @@ export interface Activity {
   createdAt: string;
 }
 
+// ── Tasks ───────────────────────────────────────────────────────────
+
+export type TaskStatus = 'pending' | 'done';
+
+export interface Task {
+  id: string;
+  title: string;
+  clientId: string;
+  clientName: string;
+  company: string;
+  opportunityId?: string;
+  dueDate?: string;              // ISO 8601 — ngày đến hạn
+  status: TaskStatus;
+  assignedTo?: string;           // text tự do, chưa có auth
+  createdFrom?: string;          // activityId nếu auto-created từ nextAction
+  notes?: string;
+  createdAt: string;             // ISO 8601
+  completedAt?: string;          // ISO 8601 — set khi status → done
+}
+
 // ── Misc ──────────────────────────────────────────────────────────
 
 export interface ReminderAlert {

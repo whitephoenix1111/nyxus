@@ -38,7 +38,8 @@ export async function GET(request: Request) {
 //   3. Nếu promoteOpportunityTo:
 //      - PATCH opportunity.status + confidence (default stage mới)
 //      - append statusHistory
-//      - nếu newStatus === 'Qualified': PATCH client.isProspect = false
+//      - nếu newStatus === 'Won': PATCH client.isProspect = false
+// NOTE: Auto-create Task đã được bỏ — FE xử lý có confirm ở Step 2 (Bước 3.2)
 
 export async function POST(request: Request) {
   try {
@@ -85,8 +86,8 @@ export async function POST(request: Request) {
           opp.status     = newStatus;
           opp.confidence = STAGE_DEFAULT_CONFIDENCE[newStatus];
 
-          // Nếu promote lên Qualified → activate client
-          if (newStatus === 'Qualified') {
+          // Nếu promote lên Won → activate client
+          if (newStatus === 'Won') {
             const clientIndex = clients.findIndex(c => c.id === opp.clientId);
             if (clientIndex !== -1) {
               clients[clientIndex].isProspect = false;

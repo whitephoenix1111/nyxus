@@ -10,7 +10,7 @@ interface ActivityStore {
   error: string | null;
 
   fetchActivities: () => Promise<void>;
-  addActivity: (data: Omit<Activity, 'id' | 'createdAt'>) => Promise<void>;
+  addActivity: (data: Omit<Activity, 'id' | 'createdAt'>) => Promise<Activity | null>;
   updateActivity: (id: string, data: Partial<Activity>) => Promise<void>;
   deleteActivity: (id: string) => Promise<void>;
 }
@@ -38,10 +38,16 @@ export const useActivityStore = create<ActivityStore>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!res.ok) {
+        set({ error: 'Failed to add activity' });
+        return null;
+      }
       const newAct: Activity = await res.json();
       set(s => ({ activities: [newAct, ...s.activities] }));
+      return newAct;
     } catch {
       set({ error: 'Failed to add activity' });
+      return null;
     }
   },
 

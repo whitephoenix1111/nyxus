@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
-import type { Opportunity, Client } from '@/types';
+import type { Opportunity, Client, Task } from '@/types';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     opps[idx] = { ...opps[idx], ...body };
     await writeJSON('opportunities.json', opps);
 
-    // BƯỚC 2: Nếu promote → Won thì activate Client (isProspect = false)
+    // Nếu promote → Won thì activate Client (isProspect = false)
     if (body.status === 'Won') {
       const clients = await readJSON<Client[]>('clients.json');
       const clientIdx = clients.findIndex(c => c.id === opps[idx].clientId);
@@ -35,23 +35,33 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const opps = await readJSON<Opportunity[]>('opportunities.json');
 
-    // BƯỚC 3: Lưu lại opportunity sắp xóa trước khi filter
+    const [opps, clients, tasks] = await Promise.all([
+      readJSON<Opportunity[]>('opportunities.json'),
+      readJSON<Client[]>('clients.json'),
+      readJSON<Task[]>('tasks.json'),
+    ]);
+
     const deletedOpp = opps.find(o => o.id === id);
-    const filtered = opps.filter((o) => o.id !== id);
-    await writeJSON('opportunities.json', filtered);
+    const filteredOpps = opps.filter((o) => o.id !== id);
 
-    // Nếu đây là opportunity cuối cùng của một prospect → tự xóa Client
+    await writeJSON('opportunities.json', filteredOpps);
+
+    // Nếu đây là opportunity cuối của prospect → cascade xóa client
     if (deletedOpp) {
-      const remaining = filtered.filter(o => o.clientId === deletedOpp.clientId);
-      if (remaining.length === 0) {
-        const clients = await readJSON<Client[]>('clients.json');
-        const client = clients.find(c => c.id === deletedOpp.clientId);
-        if (client?.isProspect) {
-          await writeJSON('clients.json',
-            clients.filter(c => c.id !== deletedOpp.clientId));
-        }
+      const remaining = filteredOpps.filter(o => o.clientId === deletedOpp.clientId);
+      const client = clients.find(c => c.id === deletedOpp.clientId);
+
+      if (remaining.length === 0 && client?.isProspect) {
+        await Promise.all([
+          // Xóa client
+          writeJSON('clients.json', clients.filter(c => c.id !== deletedOpp.clientId)),
+          // Activities: giữ lại toàn bộ (log lịch sử là bất biến)
+          // Tasks: xóa pending, giữ done
+          writeJSON('tasks.json', tasks.filter(
+            (t) => t.clientId !== deletedOpp.clientId || t.status === 'done'
+          )),
+        ]);
       }
     }
 

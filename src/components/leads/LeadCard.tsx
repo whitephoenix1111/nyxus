@@ -72,9 +72,10 @@ export function LostCard({ opp, onReopen }: {
   );
 }
 
-export function LeadCard({ opp, deleteConfirm, onPromote, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel }: {
+export function LeadCard({ opp, deleteConfirm, hasPendingTask, onPromote, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel }: {
   opp: Opportunity;
   deleteConfirm: string | null;
+  hasPendingTask: boolean;
   onPromote: (opp: Opportunity) => void;
   onEdit: (opp: Opportunity) => void;
   onDeleteRequest: (id: string) => void;
@@ -120,6 +121,14 @@ export function LeadCard({ opp, deleteConfirm, onPromote, onEdit, onDeleteReques
       {/* Notes */}
       {opp.notes && (
         <p className="text-xs text-[#555] line-clamp-2 border-t border-[#1a1a1a] pt-2">{opp.notes}</p>
+      )}
+
+      {/* Badge: chưa có task */}
+      {!hasPendingTask && (
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#2a1500] bg-[#1a0e00] px-2.5 py-1.5">
+          <AlertTriangle size={10} className="text-[#F5A623] shrink-0" />
+          <span className="text-xs text-[#F5A623]">Chưa có task nào đang chờ</span>
+        </div>
       )}
 
       {/* Actions */}

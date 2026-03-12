@@ -12,18 +12,6 @@
     "confidence": 100
   },
   {
-    "id": "opp-002",
-    "clientId": "cli-002",
-    "clientName": "Elliot Burke",
-    "company": "Quantum Solutions",
-    "avatar": "EB",
-    "value": 80000,
-    "status": "Negotiation",
-    "date": "2025-02-22",
-    "lastContactDate": "2025-02-20",
-    "confidence": 80
-  },
-  {
     "id": "opp-003",
     "clientId": "cli-003",
     "clientName": "Andy Hays",
@@ -45,7 +33,8 @@
     "status": "Proposal",
     "date": "2025-03-18",
     "lastContactDate": "2025-03-10",
-    "confidence": 60
+    "confidence": 60,
+    "notes": ""
   },
   {
     "id": "opp-005",
@@ -252,18 +241,6 @@
     "confidence": 100
   },
   {
-    "id": "opp-022",
-    "clientId": "cli-022",
-    "clientName": "Mia Johansson",
-    "company": "Nordic Bridge AB",
-    "avatar": "MJ",
-    "value": 52400,
-    "status": "Proposal",
-    "date": "2025-11-28",
-    "lastContactDate": "2025-11-25",
-    "confidence": 60
-  },
-  {
     "id": "opp-023",
     "clientId": "cli-023",
     "clientName": "Alex Turner",
@@ -298,19 +275,5 @@
     "date": "2025-12-28",
     "lastContactDate": "2025-08-15",
     "confidence": 0
-  },
-  {
-    "id": "opp-bbc2ccbd",
-    "clientId": "cli-c5b21ba3",
-    "clientName": "Thái Bảo",
-    "company": "fpt",
-    "avatar": "TB",
-    "value": 35312,
-    "status": "Lead",
-    "date": "2026-03-11",
-    "lastContactDate": "2026-03-11",
-    "confidence": 15,
-    "notes": "a1d1a",
-    "statusHistory": []
   }
 ]

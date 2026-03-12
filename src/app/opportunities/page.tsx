@@ -1,29 +1,24 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Plus, X, Check, Pencil, Trash2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useOpportunityStore, useStatsByStatus } from '@/store/useOpportunityStore';
 import { formatCurrencyFull } from '@/lib/utils';
-import type { Opportunity, OpportunityStatus } from '@/types';
+import type { OpportunityStatus } from '@/types';
 import { ALL_STATUSES, STATUS_LABELS, STATUS_STYLE, type SortKey, type SortDir } from '@/components/opportunities/constants';
 import { StatusBadge, Avatar, SortIcon } from '@/components/opportunities/OppUI';
-import { EditRow } from '@/components/opportunities/EditRow';
-import { AddModal } from '@/components/opportunities/AddModal';
 
 const FILTER_TABS: Array<OpportunityStatus | 'Tất cả'> = ['Tất cả', ...ALL_STATUSES];
 const thCls = 'px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-[#555] cursor-pointer select-none hover:text-[#888] transition-colors';
 
 export default function OpportunitiesPage() {
-  const { opportunities, fetchOpportunities, isLoading, updateOpportunity, deleteOpportunity, addOpportunity } = useOpportunityStore();
+  const { opportunities, fetchOpportunities, isLoading } = useOpportunityStore();
   const { counts } = useStatsByStatus();
 
   const [activeFilter, setActiveFilter] = useState<OpportunityStatus | 'Tất cả'>('Tất cả');
   const [search, setSearch]             = useState('');
   const [sortKey, setSortKey]           = useState<SortKey>('date');
   const [sortDir, setSortDir]           = useState<SortDir>('desc');
-  const [editingId, setEditingId]       = useState<string | null>(null);
-  const [showAdd, setShowAdd]           = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => { fetchOpportunities(); }, [fetchOpportunities]);
 
@@ -59,10 +54,7 @@ export default function OpportunitiesPage() {
           <h1 className="text-2xl font-bold text-white">Cơ hội</h1>
           <p className="text-sm text-[#555] mt-0.5">{opportunities.length} cơ hội · {filtered.length} đang hiển thị</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 rounded-xl bg-[#DFFF00] px-4 py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors">
-          <Plus size={15} /> Thêm cơ hội
-        </button>
+
       </div>
 
       {/* Filter tabs + Search */}
@@ -123,11 +115,6 @@ export default function OpportunitiesPage() {
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} className="py-20 text-center text-sm text-[#555]">Không tìm thấy cơ hội nào.</td></tr>
               ) : filtered.map(opp =>
-                editingId === opp.id ? (
-                  <EditRow key={opp.id} opp={opp}
-                    onSave={data => { updateOpportunity(opp.id, data); setEditingId(null); }}
-                    onCancel={() => setEditingId(null)} />
-                ) : (
                   <tr key={opp.id} className="group border-b border-[#111] hover:bg-[#0d0d0d] transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
@@ -156,35 +143,14 @@ export default function OpportunitiesPage() {
                     <td className="px-4 py-3 text-sm text-[#555]">
                       {new Date(opp.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {deleteConfirm === opp.id ? (
-                          <>
-                            <span className="mr-1 text-xs text-[#EF4444]">Xóa?</span>
-                            <button onClick={() => { deleteOpportunity(opp.id); setDeleteConfirm(null); }}
-                              className="rounded-lg p-1.5 text-[#EF4444] hover:bg-[#EF444415] transition-colors"><Check size={13} /></button>
-                            <button onClick={() => setDeleteConfirm(null)}
-                              className="rounded-lg p-1.5 text-[#555] hover:bg-[#1a1a1a] transition-colors"><X size={13} /></button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => setEditingId(opp.id)}
-                              className="rounded-lg p-1.5 text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors"><Pencil size={13} /></button>
-                            <button onClick={() => setDeleteConfirm(opp.id)}
-                              className="rounded-lg p-1.5 text-[#555] hover:text-[#EF4444] hover:bg-[#EF444415] transition-colors"><Trash2 size={13} /></button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+
                   </tr>
-                )
               )}
             </tbody>
           </table>
         )}
       </div>
 
-      {showAdd && <AddModal onClose={() => setShowAdd(false)} onAdd={(d) => { addOpportunity(d as Opportunity); }} />}
     </div>
   );
 }

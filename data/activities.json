@@ -371,5 +371,20 @@
     "nextActionDate": "2026-04-01",
     "notes": "Ben thích sản phẩm nhưng budget hiện tại không đủ. Có tiềm năng referral cho các studio khác.",
     "createdAt": "2025-08-15"
+  },
+  {
+    "type": "call",
+    "title": "đánh nó",
+    "date": "2026-03-12",
+    "clientId": "cli-002",
+    "clientName": "Elliot Burke",
+    "company": "Quantum Solutions",
+    "opportunityId": "opp-002",
+    "outcome": "positive",
+    "nextAction": "Hmm đánh nó",
+    "nextActionDate": "2026-04-04",
+    "notes": "kh can",
+    "id": "act-0c21bae0",
+    "createdAt": "2026-03-12"
   }
 ]

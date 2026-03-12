@@ -5,6 +5,7 @@ import { Plus, X, AlertTriangle, Search, RotateCcw } from 'lucide-react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useClientStore } from '@/store/useClientStore';
 import { useActivityStore } from '@/store/useActivityStore';
+import { useTaskStore } from '@/store/useTaskStore';
 import { formatCurrencyFull } from '@/lib/utils';
 import type { Opportunity, OpportunityStatus } from '@/types';
 import { LeadModal, emptyLeadForm, type LeadFormState } from '@/components/leads/LeadModal';
@@ -15,6 +16,7 @@ export default function LeadsPage() {
   const { opportunities, fetchOpportunities, isLoading, updateOpportunity, updateStatus, deleteOpportunity } = useOpportunityStore();
   const { clients, addLead, fetchClients } = useClientStore();
   const { fetchActivities } = useActivityStore();
+  const { tasks, fetchTasks, addTask } = useTaskStore();
 
   const [search, setSearch]               = useState('');
   const [tab, setTab]                     = useState<'active' | 'lost'>('active');
@@ -28,7 +30,8 @@ export default function LeadsPage() {
     fetchOpportunities();
     fetchActivities();
     fetchClients();
-  }, [fetchOpportunities, fetchActivities, fetchClients]);
+    fetchTasks();
+  }, [fetchOpportunities, fetchActivities, fetchClients, fetchTasks]);
 
   const ACTIVE_STATUSES = ['Lead', 'Qualified', 'Proposal', 'Negotiation'];
 
@@ -67,6 +70,13 @@ export default function LeadsPage() {
     );
   }, [opportunities, clients, search]);
 
+  // Map clientId → có pending task không (dùng cho badge LeadCard)
+  const pendingClientIds = useMemo(() => {
+    const ids = new Set<string>();
+    tasks.forEach(t => { if (t.status === 'pending') ids.add(t.clientId); });
+    return ids;
+  }, [tasks]);
+
   const staleCount = useMemo(() => leads.filter(o => daysSince(o.lastContactDate) > 3).length, [leads]);
   const totalValue = useMemo(() => leads.reduce((s, o) => s + o.value, 0), [leads]);
 
@@ -74,11 +84,28 @@ export default function LeadsPage() {
     const result = await addLead({
       name:    form.clientName,
       company: form.company,
-      email:   form.email,       // fix: truyền đúng email
+      email:   form.email,
       value:   Number(form.value),
       notes:   form.notes,
     });
-    if (result) await fetchOpportunities();
+
+    if (result) {
+      await fetchOpportunities();
+
+      // Nếu user điền task đầu tiên → tạo task ngay
+      if (form.firstTaskTitle.trim()) {
+        await addTask({
+          title:         form.firstTaskTitle.trim(),
+          clientId:      result.clientId,
+          clientName:    form.clientName,
+          company:       form.company,
+          opportunityId: result.opportunityId,
+          dueDate:       form.firstTaskDate || undefined,
+          status:        'pending',
+        });
+      }
+    }
+
     setShowAdd(false);
   };
 
@@ -191,6 +218,7 @@ export default function LeadsPage() {
                   key={opp.id}
                   opp={opp}
                   deleteConfirm={deleteConfirm}
+                  hasPendingTask={pendingClientIds.has(opp.clientId)}
                   onPromote={setPromoteTarget}
                   onEdit={setEditTarget}
                   onDeleteRequest={setDeleteConfirm}
@@ -227,8 +255,13 @@ export default function LeadsPage() {
 
       {/* Modals */}
       {showAdd && (
-        <LeadModal title="Thêm lead mới" initial={emptyLeadForm()}
-          onClose={() => setShowAdd(false)} onSave={handleAdd} />
+        <LeadModal
+          title="Thêm lead mới"
+          initial={emptyLeadForm()}
+          showFirstTask
+          onClose={() => setShowAdd(false)}
+          onSave={handleAdd}
+        />
       )}
       {editTarget && (
         <LeadModal
@@ -244,8 +277,11 @@ export default function LeadsPage() {
             lastContactDate: editTarget.lastContactDate,
             notes:           editTarget.notes ?? '',
             status:          editTarget.status,
+            firstTaskTitle:  '',
+            firstTaskDate:   '',
           }}
-          onClose={() => setEditTarget(null)} onSave={handleEdit}
+          onClose={() => setEditTarget(null)}
+          onSave={handleEdit}
         />
       )}
       {promoteTarget && (

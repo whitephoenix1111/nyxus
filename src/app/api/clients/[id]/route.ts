@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
-import type { Client, Opportunity, Activity } from '@/types';
+import type { Client, Opportunity, Task } from '@/types';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,15 +36,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-// DELETE — cascade xóa opportunities và activities liên kết
+// DELETE — cascade theo quy tắc:
+//   ✅ Giữ: activities (log đã xảy ra), tasks đã done
+//   ❌ Xóa: opportunities, tasks đang pending
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
-    const [clients, opportunities, activities] = await Promise.all([
+    const [clients, opportunities, tasks] = await Promise.all([
       readJSON<Client[]>('clients.json'),
       readJSON<Opportunity[]>('opportunities.json'),
-      readJSON<Activity[]>('activities.json'),
+      readJSON<Task[]>('tasks.json'),
     ]);
 
     const clientExists = clients.some((c) => c.id === id);
@@ -52,16 +54,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    // Lấy danh sách opportunityId liên kết để xóa activities
-    const linkedOppIds = new Set(
-      opportunities.filter((o) => o.clientId === id).map((o) => o.id)
-    );
-
     await Promise.all([
-      writeJSON('clients.json',      clients.filter((c) => c.id !== id)),
+      writeJSON('clients.json',       clients.filter((c) => c.id !== id)),
       writeJSON('opportunities.json', opportunities.filter((o) => o.clientId !== id)),
-      writeJSON('activities.json',    activities.filter(
-        (a) => a.clientId !== id && !(a.opportunityId && linkedOppIds.has(a.opportunityId))
+      // Activities: giữ lại toàn bộ (log lịch sử là bất biến)
+      // Tasks: xóa pending, giữ done
+      writeJSON('tasks.json', tasks.filter(
+        (t) => t.clientId !== id || t.status === 'done'
       )),
     ]);
 

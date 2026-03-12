@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, CalendarClock } from 'lucide-react';
 import type { OpportunityStatus } from '@/types';
 
 export type LeadFormState = {
@@ -15,6 +15,9 @@ export type LeadFormState = {
   lastContactDate: string;
   notes: string;
   status: OpportunityStatus;
+  // First-contact task (optional, chỉ dùng khi tạo lead mới)
+  firstTaskTitle: string;
+  firstTaskDate: string;
 };
 
 export const emptyLeadForm = (): LeadFormState => ({
@@ -28,6 +31,8 @@ export const emptyLeadForm = (): LeadFormState => ({
   lastContactDate: new Date().toISOString().slice(0, 10),
   notes: '',
   status: 'Lead',
+  firstTaskTitle: '',
+  firstTaskDate: '',
 });
 
 const inputCls = 'w-full rounded-xl bg-[#0a0a0a] border px-3 py-2 text-sm text-white focus:outline-none transition-colors';
@@ -49,22 +54,21 @@ function Field({
   );
 }
 
-export function LeadModal({ initial, title, onClose, onSave }: {
+export function LeadModal({ initial, title, onClose, onSave, showFirstTask = false }: {
   initial: LeadFormState;
   title: string;
   onClose: () => void;
   onSave: (f: LeadFormState) => void;
+  showFirstTask?: boolean;
 }) {
   const [form, setForm]     = useState<LeadFormState>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof LeadFormState, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof LeadFormState, boolean>>>({});
 
-  // Generic onChange — mỗi field chỉ update đúng key của nó
   const handle = (k: keyof LeadFormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm(prev => ({ ...prev, [k]: e.target.value }));
       setTouched(prev => ({ ...prev, [k]: true }));
-      // Clear error khi bắt đầu nhập
       if (errors[k]) setErrors(prev => ({ ...prev, [k]: undefined }));
     };
 
@@ -82,18 +86,16 @@ export function LeadModal({ initial, title, onClose, onSave }: {
   }
 
   function handleSave() {
-    // Mark tất cả fields là touched khi submit
     setTouched({ clientName: true, company: true, value: true, email: true });
     if (validate()) onSave(form);
   }
 
-  // Border color theo validation state
   const borderFor = (k: keyof LeadFormState) =>
     errors[k] ? 'border-[#EF4444] focus:border-[#EF4444]' : 'border-[#222] focus:border-[#DFFF00]';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-[#222] bg-[#111] p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl border border-[#222] bg-[#111] p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -131,8 +133,8 @@ export function LeadModal({ initial, title, onClose, onSave }: {
             </Field>
           </div>
 
-          {/* Email — field riêng, onChange đúng key */}
-          <div>
+          {/* Email */}
+          <div className="col-span-2">
             <Field label="Email" error={errors.email}>
               <input
                 className={`${inputCls} ${borderFor('email')}`}
@@ -158,20 +160,9 @@ export function LeadModal({ initial, title, onClose, onSave }: {
             </Field>
           </div>
 
-          {/* Ngày tạo */}
-          <div>
-            <label className={labelCls}>Ngày tạo</label>
-            <input
-              className={`${inputCls} border-[#222] focus:border-[#DFFF00]`}
-              type="date"
-              value={form.date}
-              onChange={handle('date')}
-            />
-          </div>
-
           {/* Liên hệ gần nhất */}
           <div>
-            <label className={labelCls}>Liên hệ gần nhất</label>
+            <div className="block text-xs text-[#555] mb-2 uppercase tracking-widest">Liên hệ gần nhất</div>
             <input
               className={`${inputCls} border-[#222] focus:border-[#DFFF00]`}
               type="date"
@@ -191,6 +182,39 @@ export function LeadModal({ initial, title, onClose, onSave }: {
             />
           </div>
         </div>
+
+        {/* ── Section: Lên lịch liên hệ đầu tiên ─────────────────── */}
+        {showFirstTask && (
+          <div className="mt-5 rounded-xl border border-[#1e2a00] bg-[#111f00] p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarClock size={13} className="text-[#DFFF00]" />
+              <span className="text-xs font-semibold text-[#DFFF00] uppercase tracking-widest">
+                Lên lịch liên hệ đầu tiên
+              </span>
+              <span className="text-xs text-[#555]">(tùy chọn)</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className={labelCls}>Nội dung task</label>
+                <input
+                  className={`${inputCls} border-[#2a3a00] focus:border-[#DFFF00]`}
+                  placeholder="Gọi điện giới thiệu, gửi email chào hàng..."
+                  value={form.firstTaskTitle}
+                  onChange={handle('firstTaskTitle')}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Ngày đến hạn</label>
+                <input
+                  className={`${inputCls} border-[#2a3a00] focus:border-[#DFFF00]`}
+                  type="date"
+                  value={form.firstTaskDate}
+                  onChange={handle('firstTaskDate')}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 mt-6">

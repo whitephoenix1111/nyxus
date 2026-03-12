@@ -74,11 +74,6 @@ export function AddModal({ onClose, onAdd }: {
             <input className={inputCls} type="number" min={0} max={100} value={form.confidence}
               onChange={e => setForm(f => ({ ...f, confidence: e.target.value }))} />
           </div>
-          <div>
-            <label className={labelCls}>Ngày</label>
-            <input className={inputCls} type="date" value={form.date}
-              onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-          </div>
           <div className="col-span-2">
             <label className={labelCls}>Ghi chú</label>
             <textarea className={inputCls + ' resize-none'} rows={2} value={form.notes}

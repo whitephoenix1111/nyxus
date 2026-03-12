@@ -18,23 +18,6 @@
     "createdAt": "2024-09-15"
   },
   {
-    "id": "cli-002",
-    "name": "Elliot Burke",
-    "company": "Quantum Solutions",
-    "avatar": "EB",
-    "email": "e.burke@quantumsol.io",
-    "phone": "+1 (212) 554-7720",
-    "industry": "Technology",
-    "country": "USA",
-    "website": "quantumsol.io",
-    "tags": [
-      "mid-market"
-    ],
-    "notes": "Interested in annual contract. Budget confirmed Q3.",
-    "isProspect": true,
-    "createdAt": "2024-10-02"
-  },
-  {
     "id": "cli-003",
     "name": "Andy Hays",
     "company": "Nimbus Group",
@@ -334,23 +317,6 @@
     "createdAt": "2025-04-15"
   },
   {
-    "id": "cli-022",
-    "name": "Mia Johansson",
-    "company": "Nordic Bridge AB",
-    "avatar": "MJ",
-    "email": "mia.j@nordicbridge.se",
-    "phone": "+46 8 400 12345",
-    "industry": "Logistics",
-    "country": "Sweden",
-    "website": "nordicbridge.se",
-    "tags": [
-      "mid-market"
-    ],
-    "notes": "Expanding to Baltic states. See if our product fits.",
-    "isProspect": true,
-    "createdAt": "2025-05-02"
-  },
-  {
     "id": "cli-023",
     "name": "Alex Turner",
     "company": "Redstone Works",
@@ -401,22 +367,5 @@
     "notes": "Creative studio. Budget is limited but potential for referrals.",
     "isProspect": true,
     "createdAt": "2025-06-10"
-  },
-  {
-    "id": "cli-c5b21ba3",
-    "name": "Thái Bảo",
-    "company": "fpt",
-    "avatar": "TB",
-    "email": "fpt@gmail.com",
-    "phone": "",
-    "industry": "Unknown",
-    "country": "",
-    "website": "",
-    "tags": [
-      "new-lead"
-    ],
-    "notes": "a1d1a",
-    "isProspect": true,
-    "createdAt": "2026-03-11"
   }
 ]

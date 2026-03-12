@@ -18,7 +18,6 @@ export function EditRow({ opp, onSave, onCancel }: {
     value: String(opp.value),
     status: opp.status,
     confidence: String(opp.confidence),
-    date: opp.date,
   });
 
   return (
@@ -46,16 +45,12 @@ export function EditRow({ opp, onSave, onCancel }: {
           onChange={e => setForm(f => ({ ...f, confidence: e.target.value }))} />
       </td>
       <td className="px-4 py-2">
-        <input className={inputCls} type="date" value={form.date}
-          onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-      </td>
-      <td className="px-4 py-2">
         <div className="flex items-center gap-1">
           <button
             onClick={() => onSave({
               clientName: form.clientName, company: form.company,
               value: Number(form.value), status: form.status,
-              confidence: Number(form.confidence), date: form.date,
+              confidence: Number(form.confidence),
             })}
             className="rounded-lg p-1.5 text-[#DFFF00] hover:bg-[#DFFF0015] transition-colors"
           >
