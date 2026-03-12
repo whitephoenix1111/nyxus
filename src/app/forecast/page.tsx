@@ -16,8 +16,9 @@ export default function ForecastPage() {
 
   useEffect(() => { if (opportunities.length === 0) fetchOpportunities(); }, []);
 
-  const totalValue = useMemo(() => opportunities.reduce((s, o) => s + o.value, 0), [opportunities]);
-  const totalCount = opportunities.length;
+  const activeOpps  = useMemo(() => opportunities.filter((o) => o.status !== 'Lost'), [opportunities]);
+  const totalValue   = useMemo(() => activeOpps.reduce((s, o) => s + o.value, 0), [activeOpps]);
+  const totalCount   = activeOpps.length;
 
   const weightedByStatus = useMemo(() => {
     const map: Record<OpportunityStatus, number> = { Lead: 0, Qualified: 0, Proposal: 0, Negotiation: 0, Won: 0, Lost: 0 };
@@ -26,6 +27,7 @@ export default function ForecastPage() {
   }, [opportunities]);
 
   const winRate    = totalCount > 0 ? ((counts.Won || 0) / totalCount) * 100 : 0;
+  // winRate tính trên activeOpps (Won / tất cả trừ Lost)
   const sortedOpps = useMemo(() => [...opportunities].sort((a, b) => b.value * (b.confidence / 100) - a.value * (a.confidence / 100)), [opportunities]);
   const riskyDeals = opportunities.filter(o => o.confidence < 40 && o.status !== 'Lead' && o.status !== 'Won' && o.status !== 'Lost');
 
@@ -64,11 +66,11 @@ export default function ForecastPage() {
         <KpiCard icon={TrendingUp} label="Dự Báo Có Trọng Số" value={fmt(forecastRevenue)}
           sub="Tổng giá trị × độ tin cậy" accent />
         <KpiCard icon={DollarSign} label="Tổng Pipeline" value={fmt(totalValue)}
-          sub={`${totalCount} deal đang hoạt động`} />
+          sub={`${totalCount} deal đang hoạt động (không tính Lost)`} />
         <KpiCard icon={Target} label="Tỉ Lệ Thắng" value={`${winRate.toFixed(1)}%`}
           sub={`${counts.Won || 0} đơn hàng đã chốt`} />
         <KpiCard icon={BarChart3} label="Giá Trị Deal TB"
-          value={fmt(totalCount > 0 ? totalValue / totalCount : 0)} sub="Tất cả giai đoạn" />
+          value={fmt(totalCount > 0 ? totalValue / totalCount : 0)} sub="Không tính Lost" />
       </div>
 
       {/* Main 2-col */}

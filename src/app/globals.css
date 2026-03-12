@@ -15,9 +15,9 @@
 
   /* ── TYPOGRAPHY ───────────────────────────────────────── */
   --font-display:  var(--font-syne);       /* Headings, nav labels, stat numbers */
-  --font-body:     var(--font-geist);      /* Body text, descriptions            */
+  --font-body:     var(--font-inter);      /* Body text, descriptions            */
   --font-mono:     var(--font-dm-mono);    /* Data values, IDs, code, amounts    */
-  --font-sans:     var(--font-geist);      /* Tailwind default override           */
+  --font-sans:     var(--font-inter);      /* Tailwind default override           */
 
   /* ── BRAND COLORS ─────────────────────────────────────── */
   --color-brand:           #DFFF00;        /* Lime — primary accent               */
@@ -256,7 +256,7 @@ html, body {
 .btn-primary {
   background-color: var(--color-brand);
   color: #000000;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.875rem;
   letter-spacing: 0.02em;

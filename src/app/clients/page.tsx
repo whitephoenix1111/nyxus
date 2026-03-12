@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { TrendingUp, Plus, X } from 'lucide-react';
+import { TrendingUp, Plus, X, UserCheck } from 'lucide-react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useActivityStore } from '@/store/useActivityStore';
 import { useClientStore, useClientsWithStats, useClientIndustries } from '@/store/useClientStore';
@@ -10,18 +10,20 @@ import type { Client } from '@/types';
 import { ClientCard } from './_components/ClientCard';
 import { DetailPanel } from './_components/DetailPanel';
 import { ClientFormModal } from './_components/ClientFormModal';
+import { ExistingClientModal } from './_components/ExistingClientModal';
 import { SearchInput, IndustrySelect } from './_components/FilterBar';
 import { viIndustry } from './_components/_constants';
 
 export default function ClientsPage() {
   const { opportunities, fetchOpportunities } = useOpportunityStore();
   const { fetchActivities } = useActivityStore();
-  const { clients, isLoading, fetchClients, deleteClient, addClient, updateClient } = useClientStore();
+  const { clients, isLoading, fetchClients, deleteClient, addClient, addExistingClient, updateClient } = useClientStore();
 
   const [search, setSearch] = useState('');
   const [industryFilter, setIndustryFilter] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showExistingModal, setShowExistingModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   const industries = useClientIndustries();
@@ -80,9 +82,9 @@ export default function ClientsPage() {
               {formatCurrency(totalRevenue)}
             </span>
           </div>
-          <button onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2">
-            <Plus size={13} /> Thêm khách hàng
+          <button onClick={() => setShowExistingModal(true)}
+            className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2 cursor-pointer">
+            <UserCheck size={13} /> Khách hàng hiện có
           </button>
         </div>
       </div>
@@ -129,9 +131,9 @@ export default function ClientsPage() {
                 Xóa bộ lọc
               </button>
             ) : (
-              <button onClick={() => setShowAddModal(true)}
+              <button onClick={() => setShowExistingModal(true)}
                 className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2">
-                <Plus size={12} /> Thêm khách hàng đầu tiên
+                <UserCheck size={12} /> Thêm khách hàng hiện có
               </button>
             )}
           </div>
@@ -160,8 +162,14 @@ export default function ClientsPage() {
         />
       )}
 
-      {showAddModal && (
-        <ClientFormModal mode="add" onClose={() => setShowAddModal(false)} onSave={addClient} />
+      {showExistingModal && (
+        <ExistingClientModal
+          onClose={() => setShowExistingModal(false)}
+          onSave={async (data) => {
+            await addExistingClient(data);
+            fetchOpportunities();
+          }}
+        />
       )}
 
       {editingClient && (

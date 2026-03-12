@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Syne, DM_Mono, Geist } from 'next/font/google';
+import { Syne, DM_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import TopNav from '@/components/ui/TopNav';
 
@@ -8,7 +8,7 @@ import TopNav from '@/components/ui/TopNav';
    Đặc điểm: geometric, bold personality — phù hợp dashboard tối
 ──────────────────────────────────────────────────────────────── */
 const syne = Syne({
-  subsets: ['latin'],
+  subsets: ['latin', 'vietnamese'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-syne',
   display: 'swap',
@@ -18,10 +18,10 @@ const syne = Syne({
    Dùng cho: body text, descriptions, labels dài
    Đặc điểm: clean, readable ở size nhỏ, không cạnh tranh với Syne
 ──────────────────────────────────────────────────────────────── */
-const geist = Geist({
-  subsets: ['latin'],
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
   weight: ['300', '400', '500', '600'],
-  variable: '--font-geist',
+  variable: '--font-inter',
   display: 'swap',
 });
 
@@ -30,7 +30,7 @@ const geist = Geist({
    Đặc điểm: tabular-nums, đọc số liệu không bị lệch cột
 ──────────────────────────────────────────────────────────────── */
 const dmMono = DM_Mono({
-  subsets: ['latin'],
+  subsets: ['latin', 'vietnamese'],
   weight: ['300', '400', '500'],
   variable: '--font-dm-mono',
   display: 'swap',
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
-      lang="en"
-      className={`dark ${syne.variable} ${geist.variable} ${dmMono.variable}`}
+      lang="vi"
+      className={`dark ${syne.variable} ${inter.variable} ${dmMono.variable}`}
     >
       <body className="font-sans bg-black text-white antialiased">
         <TopNav />

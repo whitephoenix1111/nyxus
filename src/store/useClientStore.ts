@@ -12,8 +12,10 @@ interface ClientStore {
   fetchClients: () => Promise<void>;
   addClient: (data: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
   addLead: (data: { name: string; company: string; email?: string; phone?: string; value: number; notes?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
+  // Thêm khách hàng cũ (isProspect=false + Opportunity Won tự động)
+  addExistingClient: (data: { name: string; company: string; email?: string; phone?: string; industry?: string; country?: string; website?: string; notes?: string; tags?: Client['tags']; value: number; contractDate?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
-  // Returns true nếu xóa thành công — caller cần tự refetch opportunities & activities
+  // Soft delete: đánh dấu archivedAt, không xóa khỏi DB
   deleteClient: (id: string) => Promise<boolean>;
 }
 
@@ -44,6 +46,26 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       set((s) => ({ clients: [...s.clients, newClient] }));
     } catch {
       set({ error: 'Failed to add client' });
+    }
+  },
+
+  addExistingClient: async (data) => {
+    try {
+      const res = await fetch('/api/clients/existing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        set({ error: 'Failed to create existing client' });
+        return null;
+      }
+      const { client, opportunity } = await res.json();
+      set((s) => ({ clients: [...s.clients, client] }));
+      return { clientId: client.id, opportunityId: opportunity.id };
+    } catch {
+      set({ error: 'Failed to create existing client' });
+      return null;
     }
   },
 
@@ -104,8 +126,8 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
   const clients = useClientStore((s) => s.clients);
 
   return useMemo((): ClientWithStats[] => {
-    // BƯỚC 4: Chỉ hiển thị client thật (isProspect = false)
-    const realClients = clients.filter(c => !c.isProspect);
+    // Chỉ hiển thị client thật (isProspect=false) và chưa bị archive
+    const realClients = clients.filter(c => !c.isProspect && !c.archivedAt);
     return realClients.map((client) => {
       const clientOpps = opportunities.filter((o) => o.clientId === client.id);
 

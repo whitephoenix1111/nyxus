@@ -61,6 +61,7 @@ export interface Client {
   notes: string;
   isProspect: boolean;           // true = Lead chưa qualify, false = Client thật (activated)
   createdAt: string;             // ISO date: "2025-09-15"
+  archivedAt?: string;           // ISO date — soft delete, ẩn khỏi UI nhưng giữ lịch sử
 }
 
 // Derived type — computed bằng cách join Client + Opportunities qua clientId

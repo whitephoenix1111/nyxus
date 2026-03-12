@@ -1,4 +1,5 @@
-import { ArrowLeft, Briefcase, Mail, Phone, Globe, Trash2, Pencil } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Briefcase, Mail, Phone, Globe, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils';
 import type { ClientWithStats, OpportunityStatus } from '@/types';
 import { Avatar, StatusBadge, TagBadge } from './_atoms';
@@ -12,6 +13,22 @@ interface DetailPanelProps {
 }
 
 export function DetailPanel({ client, onClose, onDelete, onEdit }: DetailPanelProps) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Cơ hội đang mở (không phải Won/Lost)
+  const openOpps = client.opportunities.filter(
+    (o) => o.status !== 'Won' && o.status !== 'Lost'
+  );
+
+  function handleDeleteClick() {
+    if (openOpps.length > 0) {
+      setShowConfirm(true); // có deal đang mở → cần confirm
+    } else {
+      onDelete(client.id);
+      onClose();
+    }
+  }
+
   const byStatus = client.opportunities.reduce((acc, o) => {
     acc[o.status] = (acc[o.status] || 0) + 1;
     return acc;
@@ -51,7 +68,7 @@ export function DetailPanel({ client, onClose, onDelete, onEdit }: DetailPanelPr
 
             {/* Xóa */}
             <button
-              onClick={() => { onDelete(client.id); onClose(); }}
+              onClick={handleDeleteClick}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
               style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}
               onMouseEnter={e => {
@@ -195,6 +212,53 @@ export function DetailPanel({ client, onClose, onDelete, onEdit }: DetailPanelPr
           )}
         </div>
       </div>
+
+      {/* Confirm dialog — chỉ hiện khi có deal đang mở */}
+      {showConfirm && (
+        <>
+          <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-[2px]" onClick={() => setShowConfirm(false)} />
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl shadow-2xl p-6"
+              style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  style={{ background: '#1a0505', border: '1px solid #ef444433' }}>
+                  <AlertTriangle size={16} style={{ color: '#ef4444' }} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>Xác nhận lưu trữ</h3>
+                  <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{client.name}</p>
+                </div>
+              </div>
+
+              <p className="text-sm mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                Khách hàng này có <span className="font-semibold" style={{ color: '#ef4444' }}>{openOpps.length} cơ hội đang mở</span>.
+              </p>
+              <p className="text-xs mb-5" style={{ color: 'var(--color-text-subtle)' }}>
+                Các cơ hội chưa đóng sẽ bị xóa. Dữ liệu lịch sử (activities, deals đã Won) vẫn được giữ lại.
+              </p>
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="btn-ghost text-xs px-4 py-2">
+                  Hủy
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirm(false);
+                    onDelete(client.id);
+                    onClose();
+                  }}
+                  className="text-xs px-4 py-2 rounded-lg font-medium transition-all"
+                  style={{ background: '#7f1d1d', color: '#fca5a5', border: '1px solid #ef444444' }}>
+                  Lưu trữ khách hàng
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

@@ -36,9 +36,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-// DELETE — cascade theo quy tắc:
-//   ✅ Giữ: activities (log đã xảy ra), tasks đã done
-//   ❌ Xóa: opportunities, tasks đang pending
+// DELETE — soft delete: đánh dấu archivedAt thay vì xóa hẳn
+//   ✅ Giữ: client (archivedAt set), activities, tasks done
+//   ❌ Xóa: opportunities đang mở (không phải Won), tasks pending
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -49,15 +49,23 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       readJSON<Task[]>('tasks.json'),
     ]);
 
-    const clientExists = clients.some((c) => c.id === id);
-    if (!clientExists) {
+    const clientIdx = clients.findIndex((c) => c.id === id);
+    if (clientIdx === -1) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
+    const today = new Date().toISOString().split('T')[0];
+
+    // Soft delete client
+    clients[clientIdx] = { ...clients[clientIdx], archivedAt: today };
+
     await Promise.all([
-      writeJSON('clients.json',       clients.filter((c) => c.id !== id)),
-      writeJSON('opportunities.json', opportunities.filter((o) => o.clientId !== id)),
-      // Activities: giữ lại toàn bộ (log lịch sử là bất biến)
+      writeJSON('clients.json', clients),
+      // Xóa opportunities chưa Won (Won giữ lại — lịch sử doanh thu)
+      writeJSON('opportunities.json', opportunities.filter(
+        (o) => o.clientId !== id || o.status === 'Won'
+      )),
+      // Activities: giữ lại toàn bộ
       // Tasks: xóa pending, giữ done
       writeJSON('tasks.json', tasks.filter(
         (t) => t.clientId !== id || t.status === 'done'

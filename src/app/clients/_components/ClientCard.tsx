@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { ClientWithStats } from '@/types';
-import { Avatar, StatusBadge, TagBadge } from './_atoms';
+import { Avatar, TagBadge } from './_atoms';
 
 interface ClientCardProps {
   client: ClientWithStats;
@@ -9,7 +9,19 @@ interface ClientCardProps {
 }
 
 export function ClientCard({ client, onClick }: ClientCardProps) {
-  const orderCount = client.opportunities.filter(o => o.status === 'Order').length;
+  // Số đơn = số Opportunity Won
+  const orderCount = client.opportunities.filter(o => o.status === 'Won').length;
+
+  // Ngày liên hệ gần nhất từ tất cả opportunities
+  const lastContact = client.opportunities
+    .map(o => o.lastContactDate)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  const lastContactLabel = lastContact
+    ? new Date(lastContact).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '—';
 
   return (
     <button onClick={onClick}
@@ -51,7 +63,7 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
       <div className="flex items-end justify-between">
         <div>
           <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: 'var(--color-text-faint)' }}>
-            Tổng giá trị
+            Tổng doanh thu
           </p>
           <p className="text-lg font-bold tabular-nums" style={{ color: 'var(--color-text-primary)' }}>
             {formatCurrency(client.totalValue)}
@@ -59,26 +71,17 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
         </div>
         <div className="text-right">
           <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: 'var(--color-text-faint)' }}>
-            Cơ hội
+            Số đơn
           </p>
           <p className="text-lg font-bold tabular-nums" style={{ color: 'var(--color-text-primary)' }}>
-            {client.opportunityCount}
+            {orderCount}
           </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        {client.topStatus ? <StatusBadge status={client.topStatus} /> : <span />}
-        {orderCount > 0 && (
-          <span className="text-xs tabular-nums" style={{ color: 'var(--color-brand)' }}>
-            {orderCount} đơn hàng
-          </span>
-        )}
-        {orderCount === 0 && client.forecastValue > 0 && (
-          <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>
-            ~{formatCurrency(Math.round(client.forecastValue))} dự báo
-          </span>
-        )}
+        <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>Liên hệ cuối</span>
+        <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>{lastContactLabel}</span>
       </div>
     </button>
   );
