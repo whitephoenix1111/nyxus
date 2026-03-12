@@ -81,8 +81,6 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   );
 }
 
-// ── Render function tách riêng để tránh inline cast phức tạp ──
-// Double-cast qua unknown trước để bypass readonly + type mismatch
 function renderTooltip(props: unknown) {
   const p = props as { active?: boolean; payload?: unknown };
   return (
@@ -93,9 +91,28 @@ function renderTooltip(props: unknown) {
   );
 }
 
+// Làm tròn lên bội số gần nhất của `step`
+function ceilTo(value: number, step: number) {
+  return Math.ceil(value / step) * step;
+}
+
+// Tính domain + ticks Y-axis động từ data
+function buildYAxis(data: DataPoint[]): { domain: [number, number]; ticks: number[] } {
+  if (data.length === 0) {
+    return { domain: [0, 100_000], ticks: [0, 25_000, 50_000, 75_000, 100_000] };
+  }
+  const maxVal  = Math.max(...data.map((d) => d.value));
+  const step    = maxVal > 500_000 ? 100_000 : maxVal > 200_000 ? 50_000 : maxVal > 50_000 ? 25_000 : 10_000;
+  const ceiling = ceilTo(maxVal * 1.15, step); // 15% headroom
+  const ticks: number[] = [];
+  for (let v = 0; v <= ceiling; v += step) ticks.push(v);
+  return { domain: [0, ceiling], ticks };
+}
+
 // ── Chart ──────────────────────────────────────────────────────
 export default function KPIScatterChart({ data, averageValue }: KPIScatterChartProps) {
   const xTicks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const { domain, ticks } = buildYAxis(data);
 
   return (
     <div className="w-full">
@@ -115,13 +132,17 @@ export default function KPIScatterChart({ data, averageValue }: KPIScatterChartP
           <YAxis
             type="number"
             dataKey="value"
-            domain={[0, 320000]}
-            ticks={[0, 50000, 100000, 150000, 200000, 250000, 300000]}
-            tickFormatter={(v) => `${v / 1000}k`}
+            domain={domain}
+            ticks={ticks}
+            tickFormatter={(v) => {
+              if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+              if (v >= 1_000)     return `${(v / 1_000).toFixed(0)}k`;
+              return `${v}`;
+            }}
             tick={{ fill: '#555', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={36}
+            width={40}
           />
           <Tooltip content={renderTooltip} cursor={false} />
           <ReferenceLine

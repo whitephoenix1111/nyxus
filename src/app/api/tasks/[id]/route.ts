@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
+import { requireRole } from '@/lib/session';
 import type { Task } from '@/types';
 
 interface RouteParams {
@@ -10,6 +11,7 @@ interface RouteParams {
 // Nếu status → done: tự set completedAt = today
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    await requireRole(['salesperson', 'manager']);
     const { id } = await params;
     const body = await request.json();
 
@@ -42,6 +44,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 // DELETE /api/tasks/[id]
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
+    await requireRole(['salesperson', 'manager']);
     const { id } = await params;
     const tasks = await readJSON<Task[]>('tasks.json');
     const filtered = tasks.filter(t => t.id !== id);

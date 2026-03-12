@@ -3,9 +3,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Plus, Search, X, CheckSquare, Clock, ListTodo, ChevronDown } from 'lucide-react';
 import { useActivityStore } from '@/store/useActivityStore';
-import { useTaskStore, usePendingTasks, useOverdueTasks } from '@/store/useTaskStore';
+import { useTaskStore, usePendingTasks, useOverdueTasks, useTasksForClients } from '@/store/useTaskStore';
 import { useClientStore } from '@/store/useClientStore';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
+import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
 import type { ActivityType as AType, ActivityOutcome } from '@/types';
 import { TYPE_CONFIG, OUTCOME_CONFIG, ALL_TYPES, ALL_OUTCOMES, groupByDate } from '@/components/activities/constants';
 import { ActivityCard } from '@/components/activities/ActivityCard';
@@ -16,10 +17,21 @@ import { TaskModal } from '@/components/tasks/TaskModal';
 
 // ── Task Panel ────────────────────────────────────────────────────
 
-function TaskPanel() {
+function TaskPanel({ ownerClientIds }: { ownerClientIds: Set<string> | null }) {
   const { tasks, isLoading, fetchTasks, addTask, toggleDone, deleteTask } = useTaskStore();
-  const pending    = usePendingTasks();
-  const overdue    = useOverdueTasks();
+  const allPending  = usePendingTasks();
+  const allOverdue  = useOverdueTasks();
+  const fallbackIds = useMemo(() => new Set(tasks.map(t => t.clientId)), [tasks]);
+  const ownedTasks  = useTasksForClients(ownerClientIds ?? fallbackIds);
+
+  // null → Manager → thấy tất cả | Set → Sales → chỉ thấy task của client mình
+  const today   = new Date().toISOString().split('T')[0];
+  const pending = ownerClientIds
+    ? ownedTasks.filter(t => t.status === 'pending')
+    : allPending;
+  const overdue = ownerClientIds
+    ? ownedTasks.filter(t => t.status === 'pending' && t.dueDate && t.dueDate < today)
+    : allOverdue;
   const [tab, setTab]           = useState<'pending' | 'done'>('pending');
   const [showModal, setShowModal] = useState(false);
 
@@ -123,7 +135,14 @@ function TaskPanel() {
       </div>
 
       {showModal && (
-        <TaskModal onClose={() => setShowModal(false)} onSave={addTask} />
+        <TaskModal
+          onClose={() => setShowModal(false)}
+          allowedClientIds={ownerClientIds ?? undefined}
+          onSave={async (data) => {
+            await addTask(data);
+            await fetchTasks();
+          }}
+        />
       )}
     </div>
   );
@@ -133,8 +152,16 @@ function TaskPanel() {
 
 export default function ActivitiesPage() {
   const { activities, isLoading, fetchActivities, deleteActivity, addActivity } = useActivityStore();
-  const { fetchClients }       = useClientStore();
+  const { clients, fetchClients }       = useClientStore();
   const { fetchOpportunities } = useOpportunityStore();
+  const currentUser = useCurrentUser();
+  const isManager   = useIsManager();
+
+  // Set clientId mà current user sở hữu — null nếu là Manager
+  const ownerClientIds = useMemo(() => {
+    if (isManager) return null;
+    return new Set(clients.filter(c => c.ownerId === currentUser?.id).map(c => c.id));
+  }, [isManager, clients, currentUser?.id]);
 
   const [search,        setSearch]        = useState('');
   const [typeFilter,    setTypeFilter]    = useState<AType | ''>('');
@@ -150,8 +177,14 @@ export default function ActivitiesPage() {
     fetchOpportunities();
   }, [fetchActivities, fetchClients, fetchOpportunities]);
 
+  // Filter activities theo owner
+  const visibleActivities = useMemo(() => {
+    if (!ownerClientIds) return activities;
+    return activities.filter(a => ownerClientIds.has(a.clientId));
+  }, [activities, ownerClientIds]);
+
   const filtered = useMemo(() => {
-    let list = activities;
+    let list = visibleActivities;
     const q = search.trim().toLowerCase();
     if (q) list = list.filter(a =>
       a.title.toLowerCase().includes(q) ||
@@ -161,7 +194,7 @@ export default function ActivitiesPage() {
     if (typeFilter)    list = list.filter(a => a.type === typeFilter);
     if (outcomeFilter) list = list.filter(a => a.outcome === outcomeFilter);
     return list;
-  }, [activities, search, typeFilter, outcomeFilter]);
+  }, [visibleActivities, search, typeFilter, outcomeFilter]);
 
   const grouped    = useMemo(() => groupByDate(filtered as Parameters<typeof groupByDate>[0]), [filtered]);
   const hasFilter  = !!(search || typeFilter || outcomeFilter);
@@ -195,7 +228,7 @@ export default function ActivitiesPage() {
             <div>
               <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Hoạt động</h1>
               <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                {activities.length} hoạt động · theo dõi mọi tương tác với khách hàng
+                {visibleActivities.length} hoạt động · theo dõi mọi tương tác với khách hàng
               </p>
             </div>
             <button onClick={() => setShowModal(true)}
@@ -204,7 +237,7 @@ export default function ActivitiesPage() {
             </button>
           </div>
 
-          {!isLoading && <KpiBar activities={activities} />}
+          {!isLoading && <KpiBar activities={visibleActivities} />}
 
           {/* Filters */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -363,7 +396,7 @@ export default function ActivitiesPage() {
         {/* Right: Task panel (~35%) */}
         <div className={`w-full md:w-[340px] lg:w-[380px] shrink-0 overflow-hidden
           ${mobileTab === 'activities' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
-          <TaskPanel />
+          <TaskPanel ownerClientIds={ownerClientIds} />
         </div>
       </div>
 

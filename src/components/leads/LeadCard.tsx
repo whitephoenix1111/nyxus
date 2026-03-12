@@ -1,6 +1,8 @@
-import { Clock, AlertTriangle, Check, X, Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { Clock, AlertTriangle, Check, X, Pencil, Trash2, RotateCcw, UserRound } from 'lucide-react';
 import { formatCurrencyFull } from '@/lib/utils';
 import type { Opportunity } from '@/types';
+import { OwnerBadge } from '@/components/ui/OwnerBadge';
+import { useIsManager } from '@/store/useAuthStore';
 
 export function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
@@ -72,16 +74,19 @@ export function LostCard({ opp, onReopen }: {
   );
 }
 
-export function LeadCard({ opp, deleteConfirm, hasPendingTask, onPromote, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel }: {
+export function LeadCard({ opp, deleteConfirm, hasPendingTask, canEdit = true, onPromote, onEdit, onAssign, onDeleteRequest, onDeleteConfirm, onDeleteCancel, }: {
   opp: Opportunity;
   deleteConfirm: string | null;
   hasPendingTask: boolean;
-  onPromote: (opp: Opportunity) => void;
-  onEdit: (opp: Opportunity) => void;
-  onDeleteRequest: (id: string) => void;
-  onDeleteConfirm: (id: string) => void;
+  canEdit?: boolean;
+  onPromote?: (opp: Opportunity) => void;
+  onEdit?: (opp: Opportunity) => void;
+  onAssign?: (opp: Opportunity) => void;   // manager only
+  onDeleteRequest?: (id: string) => void;
+  onDeleteConfirm?: (id: string) => void;
   onDeleteCancel: () => void;
 }) {
+  const isManager = useIsManager();
   const days = daysSince(opp.lastContactDate);
 
   return (
@@ -95,7 +100,10 @@ export function LeadCard({ opp, deleteConfirm, hasPendingTask, onPromote, onEdit
             <p className="text-xs text-[#555] truncate">{opp.company}</p>
           </div>
         </div>
-        <span className="group-hover:opacity-0 transition-opacity"><StaleTag days={days} /></span>
+        <div className="flex items-center gap-1.5 group-hover:opacity-0 transition-opacity">
+          {isManager && <OwnerBadge ownerId={opp.ownerId} />}
+          <StaleTag days={days} />
+        </div>
       </div>
 
       {/* Value + confidence */}
@@ -112,10 +120,12 @@ export function LeadCard({ opp, deleteConfirm, hasPendingTask, onPromote, onEdit
             <span className="text-xs text-[#555] tabular-nums">{opp.confidence}%</span>
           </div>
         </div>
-        <button onClick={() => onPromote(opp)}
-          className="rounded-lg border border-[#DFFF0030] px-2.5 py-1 text-xs font-medium text-[#DFFF00] hover:bg-[#DFFF0015] transition-colors">
-          Thăng ↑
-        </button>
+        {canEdit && onPromote && (
+          <button onClick={() => onPromote(opp)}
+            className="rounded-lg border border-[#DFFF0030] px-2.5 py-1 text-xs font-medium text-[#DFFF00] hover:bg-[#DFFF0015] transition-colors">
+            Thăng ↑
+          </button>
+        )}
       </div>
 
       {/* Notes */}
@@ -133,26 +143,44 @@ export function LeadCard({ opp, deleteConfirm, hasPendingTask, onPromote, onEdit
 
       {/* Actions */}
       <div className="absolute right-3 top-3 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <button onClick={() => onEdit(opp)}
-          className="rounded-lg p-1.5 text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors">
-          <Pencil size={12} />
-        </button>
-        {deleteConfirm === opp.id ? (
-          <>
-            <button onClick={() => onDeleteConfirm(opp.id)}
-              className="rounded-lg p-1.5 text-[#EF4444] hover:bg-[#EF444415] transition-colors">
-              <Check size={12} />
-            </button>
-            <button onClick={onDeleteCancel}
-              className="rounded-lg p-1.5 text-[#555] hover:bg-[#1a1a1a] transition-colors">
-              <X size={12} />
-            </button>
-          </>
-        ) : (
-          <button onClick={() => onDeleteRequest(opp.id)}
-            className="rounded-lg p-1.5 text-[#555] hover:text-[#EF4444] hover:bg-[#EF444415] transition-colors">
-            <Trash2 size={12} />
+        {/* Assign — chỉ hiện với manager */}
+        {onAssign && (
+          <button onClick={() => onAssign(opp)}
+            className="rounded-lg p-1.5 text-[#DFFF00] hover:bg-[#DFFF0015] transition-colors"
+            title="Assign cho sales khác">
+            <UserRound size={12} />
           </button>
+        )}
+        {canEdit && (
+          <>
+          {onEdit && (
+            <button onClick={() => onEdit(opp)}
+              className="rounded-lg p-1.5 text-[#555] hover:text-white hover:bg-[#1a1a1a] transition-colors">
+              <Pencil size={12} />
+            </button>
+          )}
+          {deleteConfirm === opp.id ? (
+            <>
+              {onDeleteConfirm && (
+                <button onClick={() => onDeleteConfirm(opp.id)}
+                  className="rounded-lg p-1.5 text-[#EF4444] hover:bg-[#EF444415] transition-colors">
+                  <Check size={12} />
+                </button>
+              )}
+              <button onClick={onDeleteCancel}
+                className="rounded-lg p-1.5 text-[#555] hover:bg-[#1a1a1a] transition-colors">
+                <X size={12} />
+              </button>
+            </>
+          ) : (
+            onDeleteRequest && (
+              <button onClick={() => onDeleteRequest(opp.id)}
+                className="rounded-lg p-1.5 text-[#555] hover:text-[#EF4444] hover:bg-[#EF444415] transition-colors">
+                <Trash2 size={12} />
+              </button>
+            )
+          )}
+          </>
         )}
       </div>
     </div>

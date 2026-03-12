@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Syne, DM_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import TopNav from '@/components/ui/TopNav';
+import AuthProvider from '@/components/ui/AuthProvider';
 
 /* ── Display font: Syne ───────────────────────────────────────
    Dùng cho: headings, nav labels, stat numbers, page titles
@@ -48,8 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`dark ${syne.variable} ${inter.variable} ${dmMono.variable}`}
     >
       <body className="font-sans bg-black text-white antialiased">
-        <TopNav />
-        <main className="min-h-screen">{children}</main>
+        <AuthProvider>
+          <TopNav />
+          <main className="min-h-screen">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

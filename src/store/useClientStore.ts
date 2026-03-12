@@ -17,6 +17,8 @@ interface ClientStore {
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
   // Soft delete: đánh dấu archivedAt, không xóa khỏi DB
   deleteClient: (id: string) => Promise<boolean>;
+  // Manager only: assign lead sang salesperson khác
+  assignLead: (clientId: string, newOwnerId: string) => Promise<boolean>;
 }
 
 export const useClientStore = create<ClientStore>((set, get) => ({
@@ -115,6 +117,26 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       return true; // Caller sẽ refetch opportunities & activities
     } catch {
       set({ clients: prev, error: 'Failed to delete client' });
+      return false;
+    }
+  },
+
+  assignLead: async (clientId, newOwnerId) => {
+    try {
+      const res = await fetch(`/api/leads/${clientId}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerId: newOwnerId }),
+      });
+      if (!res.ok) return false;
+      // Cập nhật local state
+      set((s) => ({
+        clients: s.clients.map(c =>
+          c.id === clientId ? { ...c, ownerId: newOwnerId } : c
+        ),
+      }));
+      return true;
+    } catch {
       return false;
     }
   },

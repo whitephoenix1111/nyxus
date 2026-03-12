@@ -1,14 +1,23 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ArrowUpRight, MoreHorizontal } from 'lucide-react';
 import { formatCurrencyFull } from '@/lib/utils';
 import type { OpportunityStatus } from '@/types';
+
+const STATUS_HREF: Record<OpportunityStatus, string> = {
+  Lead:        '/opportunities',
+  Qualified:   '/opportunities',
+  Proposal:    '/opportunities',
+  Negotiation: '/opportunities',
+  Won:         '/clients',
+  Lost:        '/opportunities',
+};
 
 interface StatCardProps {
   status: OpportunityStatus;
   count: number;
   totalValue: number;
-  delta?: number;
   isActive?: boolean;
 }
 
@@ -30,14 +39,17 @@ const STATUS_LABELS: Record<OpportunityStatus, string> = {
   Lost: 'Thất bại',
 };
 
-export default function StatCard({ status, count, totalValue, delta, isActive }: StatCardProps) {
+export default function StatCard({ status, count, totalValue, isActive }: StatCardProps) {
   const isLead = status === 'Lead';
+  const router = useRouter();
+  const href   = STATUS_HREF[status];
 
   return (
     <div
-      className={`relative flex flex-col justify-between rounded-2xl p-5 transition-all duration-200 ${
+      onClick={() => router.push(href)}
+      className={`relative flex flex-col justify-between rounded-2xl p-5 transition-all duration-200 cursor-pointer ${
         isActive
-          ? 'bg-[#DFFF00] text-black'
+          ? 'bg-[#DFFF00] text-black hover:brightness-110'
           : 'bg-[#111] text-white hover:bg-[#161616]'
       }`}
       style={{ minHeight: '130px' }}
@@ -48,9 +60,9 @@ export default function StatCard({ status, count, totalValue, delta, isActive }:
           <span className="text-base">{STATUS_ICONS[status]}</span>
           <span>{STATUS_LABELS[status]}</span>
         </div>
-        <button className={`rounded-md p-1 transition-colors ${isActive ? 'hover:bg-black/10' : 'hover:bg-white/5'}`}>
-          <ArrowUpRight size={14} className={isActive ? 'text-black/60' : 'text-[#555]'} />
-        </button>
+        <span className={`rounded-md p-1 ${isActive ? 'text-black/60' : 'text-[#555]'}`}>
+          <ArrowUpRight size={14} />
+        </span>
       </div>
 
       {/* Count */}
@@ -59,11 +71,6 @@ export default function StatCard({ status, count, totalValue, delta, isActive }:
           <span className={`text-4xl font-bold tracking-tight ${isActive ? 'text-black' : 'text-white'}`}>
             {isLead ? count : formatCurrencyFull(totalValue).replace('$', '')}
           </span>
-          {delta !== undefined && (
-            <span className={`mb-1 text-sm font-semibold ${isActive ? 'text-black/60' : 'text-[#DFFF00]'}`}>
-              +{delta}
-            </span>
-          )}
         </div>
         {!isLead && (
           <p className={`mt-0.5 text-xs ${isActive ? 'text-black/50' : 'text-[#555]'}`}>

@@ -25,6 +25,7 @@ export const STAGE_CONFIDENCE_RANGE: Record<OpportunityStatus, number | null> = 
 
 export interface Opportunity {
   id: string;
+  ownerId: string;             // FK → User.id — sales phụ trách deal này
   clientId: string;              // hard FK → Client.id (không join bằng company name)
   clientName: string;            // denormalized để tránh join mỗi render
   company: string;               // denormalized
@@ -49,6 +50,7 @@ export type ClientTag = 'enterprise' | 'mid-market' | 'priority' | 'warm' | 'col
 
 export interface Client {
   id: string;
+  ownerId: string;             // FK → User.id — sales phụ trách client này
   name: string;
   company: string;
   avatar: string;
@@ -113,6 +115,32 @@ export interface Task {
   notes?: string;
   createdAt: string;             // ISO 8601
   completedAt?: string;          // ISO 8601 — set khi status → done
+}
+
+// ── Auth ────────────────────────────────────────────────────────
+
+export type UserRole = 'salesperson' | 'manager';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar: string;           // 2-char initials, e.g. "NA"
+}
+
+// Stored in users.json (includes passwordHash — never expose to client)
+export interface UserRecord extends User {
+  passwordHash: string;
+}
+
+// Payload signed into JWT — minimal, no sensitive data
+export interface SessionUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar: string;
 }
 
 // ── Misc ──────────────────────────────────────────────────────────

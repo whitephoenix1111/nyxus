@@ -1,0 +1,42 @@
+[
+  {
+    "id": "usr-001",
+    "name": "Nguyễn Văn An",
+    "email": "sale@nyxus.vn",
+    "passwordHash": "sale123",
+    "role": "salesperson",
+    "avatar": "NA"
+  },
+  {
+    "id": "usr-002",
+    "name": "Trần Thị Bích",
+    "email": "manager@nyxus.vn",
+    "passwordHash": "manager123",
+    "role": "manager",
+    "avatar": "TB"
+  },
+  {
+    "id": "usr-003",
+    "name": "Lê Minh Khoa",
+    "email": "khoa@nyxus.vn",
+    "passwordHash": "khoa123",
+    "role": "salesperson",
+    "avatar": "LK"
+  },
+  {
+    "id": "usr-004",
+    "name": "Phạm Thu Hà",
+    "email": "ha@nyxus.vn",
+    "passwordHash": "ha123",
+    "role": "salesperson",
+    "avatar": "PH"
+  },
+  {
+    "id": "usr-005",
+    "name": "Đỗ Quang Huy",
+    "email": "huy@nyxus.vn",
+    "passwordHash": "huy123",
+    "role": "salesperson",
+    "avatar": "DH"
+  }
+]

@@ -151,8 +151,10 @@ export function useTopClients(limit = 25) {
 
 // status ∈ [Lead, Qualified, Proposal], lastContactDate > N ngày, không có pending task
 // activities được truyền vào để tránh circular import giữa stores
-export function useStaleLeads(activities: Activity[], days = 3) {
-  const opps = useOpportunityStore((s) => s.opportunities);
+// opps (optional) — nếu truyền vào sẽ dùng thay vì lấy từ store (để filter theo owner ở page level)
+export function useStaleLeads(activities: Activity[], days = 3, oppsOverride?: Opportunity[]) {
+  const storeOpps = useOpportunityStore((s) => s.opportunities);
+  const opps = oppsOverride ?? storeOpps;
   return useMemo(() => {
     const now       = Date.now();
     const threshold = days * 24 * 60 * 60 * 1000;
@@ -176,8 +178,10 @@ export function useStaleLeads(activities: Activity[], days = 3) {
 
 // activity.nextActionDate đã quá hạn && opportunity không có activity mới hơn sau due date
 // activities được truyền vào để tránh circular import
-export function useOverdueTasks(activities: Activity[]) {
-  const opps = useOpportunityStore((s) => s.opportunities);
+// opps (optional) — nếu truyền vào sẽ dùng thay vì lấy từ store
+export function useOverdueTasks(activities: Activity[], oppsOverride?: Opportunity[]) {
+  const storeOpps = useOpportunityStore((s) => s.opportunities);
+  const opps = oppsOverride ?? storeOpps;
   return useMemo(() => {
     const now = Date.now();
     const results: Array<{ activity: Activity; opportunity: Opportunity }> = [];
@@ -211,8 +215,10 @@ export function useOverdueTasks(activities: Activity[]) {
 }
 
 // status = Proposal, lastContactDate > N ngày
-export function useExpiringProposals(days = 14) {
-  const opps = useOpportunityStore((s) => s.opportunities);
+// opps (optional) — nếu truyền vào sẽ dùng thay vì lấy từ store
+export function useExpiringProposals(days = 14, oppsOverride?: Opportunity[]) {
+  const storeOpps = useOpportunityStore((s) => s.opportunities);
+  const opps = oppsOverride ?? storeOpps;
   return useMemo(() => {
     const now       = Date.now();
     const threshold = days * 24 * 60 * 60 * 1000;
@@ -226,10 +232,11 @@ export function useExpiringProposals(days = 14) {
 
 // Tổng hợp 3 loại reminder cho Dashboard widget
 // activities được truyền vào từ useActivityStore ở component — tránh circular import
-export function useReminders(activities: Activity[]) {
-  const staleLeads        = useStaleLeads(activities, 3);
-  const overdueTasks      = useOverdueTasks(activities);
-  const expiringProposals = useExpiringProposals(14);
+// opps (optional) — truyền filtered opps để giới hạn phạm vi (e.g. theo owner)
+export function useReminders(activities: Activity[], oppsOverride?: Opportunity[]) {
+  const staleLeads        = useStaleLeads(activities, 3, oppsOverride);
+  const overdueTasks      = useOverdueTasks(activities, oppsOverride);
+  const expiringProposals = useExpiringProposals(14, oppsOverride);
 
   return useMemo(() => {
     const alerts = [];

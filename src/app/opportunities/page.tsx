@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useOpportunityStore, useStatsByStatus } from '@/store/useOpportunityStore';
+import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
+import { useUsersStore } from '@/store/useUsersStore';
+import { OwnerFilter } from '@/components/ui/OwnerBadge';
 import { formatCurrencyFull } from '@/lib/utils';
 import type { OpportunityStatus } from '@/types';
 import { ALL_STATUSES, STATUS_LABELS, STATUS_STYLE, type SortKey, type SortDir } from '@/components/opportunities/constants';
@@ -13,17 +16,29 @@ const thCls = 'px-4 py-3 text-left text-xs font-medium uppercase tracking-widest
 
 export default function OpportunitiesPage() {
   const { opportunities, fetchOpportunities, isLoading } = useOpportunityStore();
-  const { counts } = useStatsByStatus();
+  const currentUser   = useCurrentUser();
+  const isManager     = useIsManager();
+  const { counts }    = useStatsByStatus();
+  const { fetchUsers } = useUsersStore();
+
+  // Sales chỉ thấy opp của mình — Manager thấy tất cả
+  const visibleOpps = isManager
+    ? opportunities
+    : opportunities.filter((o) => o.ownerId === currentUser?.id);
 
   const [activeFilter, setActiveFilter] = useState<OpportunityStatus | 'Tất cả'>('Tất cả');
   const [search, setSearch]             = useState('');
   const [sortKey, setSortKey]           = useState<SortKey>('date');
   const [sortDir, setSortDir]           = useState<SortDir>('desc');
+  const [ownerFilter, setOwnerFilter]   = useState('');
 
-  useEffect(() => { fetchOpportunities(); }, [fetchOpportunities]);
+  useEffect(() => {
+    fetchOpportunities();
+    if (isManager) fetchUsers();
+  }, [fetchOpportunities, fetchUsers, isManager]);
 
   const filtered = useMemo(() => {
-    let list = opportunities;
+    let list = ownerFilter ? visibleOpps.filter(o => o.ownerId === ownerFilter) : visibleOpps;
     if (activeFilter !== 'Tất cả') list = list.filter(o => o.status === activeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -38,7 +53,7 @@ export default function OpportunitiesPage() {
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [opportunities, activeFilter, search, sortKey, sortDir]);
+  }, [visibleOpps, ownerFilter, activeFilter, search, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -52,7 +67,7 @@ export default function OpportunitiesPage() {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold text-white">Cơ hội</h1>
-          <p className="text-sm text-[#555] mt-0.5">{opportunities.length} cơ hội · {filtered.length} đang hiển thị</p>
+          <p className="text-sm text-[#555] mt-0.5">{visibleOpps.length} cơ hội · {filtered.length} đang hiển thị</p>
         </div>
 
       </div>
@@ -61,7 +76,7 @@ export default function OpportunitiesPage() {
       <div className="flex items-center justify-between mb-4 gap-4">
         <div className="flex items-center gap-1 rounded-xl bg-[#111] p-1">
           {FILTER_TABS.map(tab => {
-            const cnt = tab === 'Tất cả' ? opportunities.length : counts[tab];
+            const cnt = tab === 'Tất cả' ? visibleOpps.length : visibleOpps.filter(o => o.status === tab).length;
             return (
               <button key={tab} onClick={() => setActiveFilter(tab)}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
@@ -75,18 +90,21 @@ export default function OpportunitiesPage() {
             );
           })}
         </div>
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
-          <input
-            className="w-56 rounded-xl border border-[#222] bg-[#111] pl-8 pr-3 py-1.5 text-sm text-white placeholder-[#555] focus:border-[#DFFF00] focus:outline-none transition-colors"
-            placeholder="Tìm kiếm..." value={search}
-            onChange={e => setSearch(e.target.value)} />
-          {search && (
-            <button onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#555] hover:text-white">
-              <X size={12} />
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+            <input
+              className="w-56 rounded-xl border border-[#222] bg-[#111] pl-8 pr-3 py-1.5 text-sm text-white placeholder-[#555] focus:border-[#DFFF00] focus:outline-none transition-colors"
+              placeholder="Tìm kiếm..." value={search}
+              onChange={e => setSearch(e.target.value)} />
+            {search && (
+              <button onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#555] hover:text-white">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <OwnerFilter value={ownerFilter} onChange={setOwnerFilter} />
         </div>
       </div>
 

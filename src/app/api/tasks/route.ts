@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
+import { requireRole } from '@/lib/session';
 import type { Task } from '@/types';
 
 // GET /api/tasks
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
 // POST /api/tasks
 export async function POST(request: Request) {
   try {
+    await requireRole(['salesperson', 'manager']);
     const body = await request.json();
 
     const newTask: Task = {

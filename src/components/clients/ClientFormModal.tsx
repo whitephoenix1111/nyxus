@@ -86,7 +86,6 @@ export function ClientFormModal({ mode, initialData, onClose, onSave }: ClientFo
         <div className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
 
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 shrink-0"
             style={{ borderBottom: '1px solid var(--color-border)' }}>
             <div className="flex items-center gap-3">
@@ -111,9 +110,7 @@ export function ClientFormModal({ mode, initialData, onClose, onSave }: ClientFo
             </button>
           </div>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Avatar preview */}
             <div className="flex items-center gap-3 py-1">
               <Avatar initials={preview} size="lg" />
               <div>
@@ -198,7 +195,6 @@ export function ClientFormModal({ mode, initialData, onClose, onSave }: ClientFo
             </Field>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
             style={{ borderTop: '1px solid var(--color-border)' }}>
             <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Hủy</button>

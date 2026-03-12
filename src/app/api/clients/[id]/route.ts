@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
-import type { Client, Opportunity, Task } from '@/types';
+import { requireRole } from '@/lib/session';
+import type { Client, Opportunity, Task, UserRole } from '@/types';
+
+// Helper: kiểm tra quyền trên 1 record
+// Manager → luôn pass; Sales → chỉ pass nếu là owner
+function canModify(sessionId: string, sessionRole: UserRole, ownerId: string): boolean {
+  if (sessionRole === 'manager') return true;
+  return sessionId === ownerId;
+}
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,6 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await requireRole(['salesperson', 'manager']);
     const { id } = await params;
     const body = await request.json();
     const clients = await readJSON<Client[]>('clients.json');
@@ -25,6 +34,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const idx = clients.findIndex((c) => c.id === id);
     if (idx === -1) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    }
+    if (!canModify(session.id, session.role, clients[idx].ownerId)) {
+      return NextResponse.json({ error: 'Forbidden: bạn không phải owner của client này' }, { status: 403 });
     }
 
     clients[idx] = { ...clients[idx], ...body };
@@ -41,6 +53,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 //   ❌ Xóa: opportunities đang mở (không phải Won), tasks pending
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await requireRole(['salesperson', 'manager']);
     const { id } = await params;
 
     const [clients, opportunities, tasks] = await Promise.all([
@@ -52,6 +65,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const clientIdx = clients.findIndex((c) => c.id === id);
     if (clientIdx === -1) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    }
+    if (!canModify(session.id, session.role, clients[clientIdx].ownerId)) {
+      return NextResponse.json({ error: 'Forbidden: bạn không phải owner của client này' }, { status: 403 });
     }
 
     const today = new Date().toISOString().split('T')[0];

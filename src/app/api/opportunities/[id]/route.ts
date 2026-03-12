@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
-import type { Opportunity, Client, Task } from '@/types';
+import { requireRole } from '@/lib/session';
+import type { Opportunity, Client, Task, UserRole } from '@/types';
+
+function canModify(sessionId: string, sessionRole: UserRole, ownerId: string): boolean {
+  if (sessionRole === 'manager') return true;
+  return sessionId === ownerId;
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -8,11 +14,15 @@ interface RouteParams {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
+    const session = await requireRole(['salesperson', 'manager']);
     const { id } = await params;
     const body = await request.json();
     const opps = await readJSON<Opportunity[]>('opportunities.json');
     const idx = opps.findIndex((o) => o.id === id);
     if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!canModify(session.id, session.role, opps[idx].ownerId)) {
+      return NextResponse.json({ error: 'Forbidden: bạn không phải owner của deal này' }, { status: 403 });
+    }
     opps[idx] = { ...opps[idx], ...body };
     await writeJSON('opportunities.json', opps);
 
@@ -34,6 +44,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
+    const session = await requireRole(['salesperson', 'manager']);
     const { id } = await params;
 
     const [opps, clients, tasks] = await Promise.all([
@@ -43,6 +54,9 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     ]);
 
     const deletedOpp = opps.find(o => o.id === id);
+    if (deletedOpp && !canModify(session.id, session.role, deletedOpp.ownerId)) {
+      return NextResponse.json({ error: 'Forbidden: bạn không phải owner của deal này' }, { status: 403 });
+    }
     const filteredOpps = opps.filter((o) => o.id !== id);
 
     await writeJSON('opportunities.json', filteredOpps);

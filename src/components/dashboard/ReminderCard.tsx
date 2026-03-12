@@ -1,19 +1,31 @@
 'use client';
 
+import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
+
+// Map reminder type → trang đích
+const REMINDER_HREF: Record<string, string> = {
+  overdue_task:      '/activities',
+  stale_deal:        '/activities',
+  expiring_proposal: '/opportunities',
+};
 
 interface ReminderCardProps {
   count: number;
   label: string;
   description: string;
   accentColor?: string;
+  type?: string;   // 'overdue_task' | 'stale_deal' | 'expiring_proposal'
 }
 
 export default function ReminderCard({
   count,
   description,
   accentColor = '#DFFF00',
+  type,
 }: ReminderCardProps) {
+  const href = (type && REMINDER_HREF[type]) ?? '/activities';
+
   return (
     <div className="rounded-2xl bg-[#111] p-4 hover:bg-[#161616] transition-colors">
       <div className="flex items-start justify-between">
@@ -34,9 +46,15 @@ export default function ReminderCard({
             <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
           </div>
         </div>
-        <button className="text-[#444] hover:text-white transition-colors">
+
+        {/* Arrow link */}
+        <Link
+          href={href}
+          className="text-[#444] hover:text-white transition-colors"
+          title="Xem chi tiết"
+        >
           <ArrowUpRight size={16} />
-        </button>
+        </Link>
       </div>
 
       <p className="mt-3 text-3xl font-bold text-white tabular-nums">{count}</p>

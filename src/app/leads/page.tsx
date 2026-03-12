@@ -11,35 +11,51 @@ import type { Opportunity, OpportunityStatus } from '@/types';
 import { LeadModal, emptyLeadForm, type LeadFormState } from '@/components/leads/LeadModal';
 import { PromoteModal } from '@/components/leads/PromoteModal';
 import { LeadCard, LostCard, daysSince } from '@/components/leads/LeadCard';
+import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
+import { useUsersStore } from '@/store/useUsersStore';
+import { OwnerFilter } from '@/components/ui/OwnerBadge';
+import { AssignLeadModal } from '@/components/leads/AssignLeadModal';
 
 export default function LeadsPage() {
+  const currentUser = useCurrentUser();
+  const isManager   = useIsManager();
+  // Manager có full quyền; salesperson chỉ edit lead của mình (check ownerId ở LeadCard)
+  const canCreate   = true; // cả 2 role đều tạo được lead
+  const canEdit     = true; // edit/delete check ownerId ở LeadCard level
+
   const { opportunities, fetchOpportunities, isLoading, updateOpportunity, updateStatus, deleteOpportunity } = useOpportunityStore();
-  const { clients, addLead, fetchClients } = useClientStore();
+  const { clients, addLead, fetchClients, assignLead } = useClientStore();
   const { fetchActivities } = useActivityStore();
   const { tasks, fetchTasks, addTask } = useTaskStore();
+  const { fetchUsers } = useUsersStore();
 
   const [search, setSearch]               = useState('');
   const [tab, setTab]                     = useState<'active' | 'lost'>('active');
   const [showAdd, setShowAdd]             = useState(false);
   const [editTarget, setEditTarget]       = useState<Opportunity | null>(null);
   const [promoteTarget, setPromoteTarget] = useState<Opportunity | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [sortStale, setSortStale]         = useState(true);
+  const [deleteConfirm, setDeleteConfirm]   = useState<string | null>(null);
+  const [sortStale, setSortStale]           = useState(true);
+  const [assignTarget, setAssignTarget]     = useState<Opportunity | null>(null);
+  const [ownerFilter, setOwnerFilter]       = useState('');
 
   useEffect(() => {
     fetchOpportunities();
     fetchActivities();
     fetchClients();
     fetchTasks();
-  }, [fetchOpportunities, fetchActivities, fetchClients, fetchTasks]);
+    if (isManager) fetchUsers();
+  }, [fetchOpportunities, fetchActivities, fetchClients, fetchTasks, fetchUsers, isManager]);
 
   const ACTIVE_STATUSES = ['Lead', 'Qualified', 'Proposal', 'Negotiation'];
 
   const leads = useMemo(() => {
     let list = opportunities.filter(o =>
       ACTIVE_STATUSES.includes(o.status) &&
-      clients.find(c => c.id === o.clientId)?.isProspect === true
+      clients.find(c => c.id === o.clientId)?.isProspect === true &&
+      (isManager || o.ownerId === currentUser?.id)
     );
+    if (ownerFilter) list = list.filter(o => o.ownerId === ownerFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(o =>
@@ -57,7 +73,8 @@ export default function LeadsPage() {
   const lostLeads = useMemo(() => {
     let list = opportunities.filter(o =>
       o.status === 'Lost' &&
-      clients.find(c => c.id === o.clientId)?.isProspect === true
+      clients.find(c => c.id === o.clientId)?.isProspect === true &&
+      (isManager || o.ownerId === currentUser?.id)
     );
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -145,7 +162,7 @@ export default function LeadsPage() {
               : <>{lostLeads.length} lead thất bại</>}
           </p>
         </div>
-        {tab === 'active' && (
+        {tab === 'active' && canCreate && (
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 rounded-xl bg-[#DFFF00] px-4 py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors">
             <Plus size={15} /> Thêm lead
@@ -173,18 +190,21 @@ export default function LeadsPage() {
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-4 gap-4">
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
-          <input
-            className="w-56 rounded-xl border border-[#222] bg-[#111] pl-8 pr-3 py-1.5 text-sm text-white placeholder-[#555] focus:border-[#DFFF00] focus:outline-none transition-colors"
-            placeholder="Tìm kiếm..." value={search}
-            onChange={e => setSearch(e.target.value)} />
-          {search && (
-            <button onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#555] hover:text-white">
-              <X size={12} />
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" />
+            <input
+              className="w-56 rounded-xl border border-[#222] bg-[#111] pl-8 pr-3 py-1.5 text-sm text-white placeholder-[#555] focus:border-[#DFFF00] focus:outline-none transition-colors"
+              placeholder="Tìm kiếm..." value={search}
+              onChange={e => setSearch(e.target.value)} />
+            {search && (
+              <button onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#555] hover:text-white">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <OwnerFilter value={ownerFilter} onChange={setOwnerFilter} />
         </div>
         {tab === 'active' && (
           <button onClick={() => setSortStale(s => !s)}
@@ -213,19 +233,25 @@ export default function LeadsPage() {
         ) : (
           <div className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {leads.map(opp => (
+              {leads.map(opp => {
+                // Manager: full quyền. Salesperson: chỉ edit lead của mình
+                const canEditThis = isManager || opp.ownerId === currentUser?.id;
+                return (
                 <LeadCard
                   key={opp.id}
                   opp={opp}
                   deleteConfirm={deleteConfirm}
                   hasPendingTask={pendingClientIds.has(opp.clientId)}
-                  onPromote={setPromoteTarget}
-                  onEdit={setEditTarget}
-                  onDeleteRequest={setDeleteConfirm}
-                  onDeleteConfirm={async id => { await deleteOpportunity(id); fetchClients(); setDeleteConfirm(null); }}
+                  canEdit={canEditThis}
+                  onPromote={canEditThis ? setPromoteTarget : undefined}
+                  onEdit={canEditThis ? setEditTarget : undefined}
+                  onAssign={isManager ? setAssignTarget : undefined}
+                  onDeleteRequest={canEditThis ? setDeleteConfirm : undefined}
+                  onDeleteConfirm={canEditThis ? async id => { await deleteOpportunity(id); fetchClients(); setDeleteConfirm(null); } : undefined}
                   onDeleteCancel={() => setDeleteConfirm(null)}
                 />
-              ))}
+                );
+              })}
             </div>
           </div>
         )
@@ -288,6 +314,16 @@ export default function LeadsPage() {
         <PromoteModal opp={promoteTarget}
           onClose={() => setPromoteTarget(null)}
           onPromote={handlePromote} />
+      )}
+      {assignTarget && (
+        <AssignLeadModal
+          opp={assignTarget}
+          onClose={() => setAssignTarget(null)}
+          onAssign={async (newOwnerId) => {
+            const ok = await assignLead(assignTarget.clientId, newOwnerId);
+            if (ok) { fetchOpportunities(); setAssignTarget(null); }
+          }}
+        />
       )}
     </div>
   );

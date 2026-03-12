@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
+import { requireRole } from '@/lib/session';
 import type { Activity, Opportunity, Client } from '@/types';
 import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await requireRole(['salesperson']);
     const body = await request.json();
 
     const newActivity: Activity = {

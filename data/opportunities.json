@@ -1,6 +1,7 @@
 [
   {
     "id": "opp-001",
+    "ownerId": "usr-001",
     "clientId": "cli-001",
     "clientName": "Tommy Cox",
     "company": "Tech Solution, Inc.",
@@ -13,6 +14,7 @@
   },
   {
     "id": "opp-003",
+    "ownerId": "usr-002",
     "clientId": "cli-003",
     "clientName": "Andy Hays",
     "company": "Nimbus Group",
@@ -25,6 +27,7 @@
   },
   {
     "id": "opp-004",
+    "ownerId": "usr-003",
     "clientId": "cli-004",
     "clientName": "Anna Mason",
     "company": "Pinnacle Enterprises",
@@ -38,6 +41,7 @@
   },
   {
     "id": "opp-005",
+    "ownerId": "usr-004",
     "clientId": "cli-005",
     "clientName": "Jason Park",
     "company": "Vertex Labs",
@@ -50,6 +54,7 @@
   },
   {
     "id": "opp-006",
+    "ownerId": "usr-005",
     "clientId": "cli-006",
     "clientName": "Chelsea Wong",
     "company": "Aurora Digital",
@@ -62,6 +67,7 @@
   },
   {
     "id": "opp-007",
+    "ownerId": "usr-001",
     "clientId": "cli-007",
     "clientName": "Marcus Reid",
     "company": "Ironclad Corp",
@@ -74,6 +80,7 @@
   },
   {
     "id": "opp-008",
+    "ownerId": "usr-003",
     "clientId": "cli-008",
     "clientName": "Priya Nair",
     "company": "Solaris Tech",
@@ -86,6 +93,7 @@
   },
   {
     "id": "opp-009",
+    "ownerId": "usr-004",
     "clientId": "cli-009",
     "clientName": "Derek Stone",
     "company": "Blueshift Media",
@@ -98,6 +106,7 @@
   },
   {
     "id": "opp-010",
+    "ownerId": "usr-004",
     "clientId": "cli-010",
     "clientName": "Linda Chen",
     "company": "Horizon Finance",
@@ -110,6 +119,7 @@
   },
   {
     "id": "opp-011",
+    "ownerId": "usr-005",
     "clientId": "cli-011",
     "clientName": "Omar Khalil",
     "company": "Summit Partners",
@@ -122,6 +132,7 @@
   },
   {
     "id": "opp-012",
+    "ownerId": "usr-001",
     "clientId": "cli-012",
     "clientName": "Sofia Reyes",
     "company": "Meridian Group",
@@ -134,6 +145,7 @@
   },
   {
     "id": "opp-013",
+    "ownerId": "usr-003",
     "clientId": "cli-013",
     "clientName": "Nathan Ford",
     "company": "ClearPath Inc.",
@@ -146,6 +158,7 @@
   },
   {
     "id": "opp-014",
+    "ownerId": "usr-004",
     "clientId": "cli-014",
     "clientName": "Isabella Tan",
     "company": "Nexus Dynamics",
@@ -158,6 +171,7 @@
   },
   {
     "id": "opp-015",
+    "ownerId": "usr-005",
     "clientId": "cli-015",
     "clientName": "Ryan Blake",
     "company": "Crestwood Consulting",
@@ -170,6 +184,7 @@
   },
   {
     "id": "opp-016",
+    "ownerId": "usr-001",
     "clientId": "cli-016",
     "clientName": "Nora Kim",
     "company": "Pathfinder LLC",
@@ -182,6 +197,7 @@
   },
   {
     "id": "opp-017",
+    "ownerId": "usr-003",
     "clientId": "cli-017",
     "clientName": "Ethan Cross",
     "company": "Caliber Systems",
@@ -194,6 +210,7 @@
   },
   {
     "id": "opp-018",
+    "ownerId": "usr-004",
     "clientId": "cli-018",
     "clientName": "Zara Ahmed",
     "company": "Vantage Point Co.",
@@ -206,6 +223,7 @@
   },
   {
     "id": "opp-019",
+    "ownerId": "usr-005",
     "clientId": "cli-019",
     "clientName": "Leo Martinez",
     "company": "Dawnlight Agency",
@@ -218,6 +236,7 @@
   },
   {
     "id": "opp-020",
+    "ownerId": "usr-001",
     "clientId": "cli-020",
     "clientName": "Cassandra Hill",
     "company": "Basecamp Ventures",
@@ -230,6 +249,7 @@
   },
   {
     "id": "opp-021",
+    "ownerId": "usr-003",
     "clientId": "cli-021",
     "clientName": "Victor Osei",
     "company": "Goldstone Capital",
@@ -242,6 +262,7 @@
   },
   {
     "id": "opp-023",
+    "ownerId": "usr-003",
     "clientId": "cli-023",
     "clientName": "Alex Turner",
     "company": "Redstone Works",
@@ -254,6 +275,7 @@
   },
   {
     "id": "opp-024",
+    "ownerId": "usr-004",
     "clientId": "cli-024",
     "clientName": "Hana Suzuki",
     "company": "Tokyo Bridge Ltd.",
@@ -266,6 +288,7 @@
   },
   {
     "id": "opp-025",
+    "ownerId": "usr-005",
     "clientId": "cli-025",
     "clientName": "Ben Carter",
     "company": "Edgeworks Studio",

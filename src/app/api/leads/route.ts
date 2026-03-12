@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
+import { getSession, requireRole } from '@/lib/session';
 import type { Client, Opportunity } from '@/types';
 import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
@@ -10,6 +11,7 @@ import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
 export async function POST(request: Request) {
   try {
+    const session = await requireRole(['salesperson']);
     const body = await request.json();
     const { name, company, email = '', phone = '', avatar, value, notes = '' } = body;
 
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
     // 1. Tạo Client với isProspect: true
     const newClient: Client = {
       id:        clientId,
+      ownerId:   session.id,   // ← gán owner = người tạo
       name,
       company,
       avatar:    generatedAvatar,
@@ -51,6 +54,7 @@ export async function POST(request: Request) {
     // 2. Tạo Opportunity: Lead, confidence = 15% (cố định, không nhập)
     const newOpportunity: Opportunity = {
       id:              oppId,
+      ownerId:         session.id,   // ← gán owner = người tạo
       clientId,
       clientName:      name,
       company,

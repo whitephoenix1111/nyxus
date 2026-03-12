@@ -140,3 +140,15 @@ export function useTasksForOpportunity(opportunityId: string) {
     [tasks, opportunityId]
   );
 }
+
+// Filter tasks theo set clientId thuộc về owner — dùng cho Activities page
+// clientIdsKey: stringify các id để useMemo detect đúng khi Set thay đổi nội dung
+export function useTasksForClients(clientIds: Set<string>) {
+  const tasks = useTaskStore(s => s.tasks);
+  const clientIdsKey = useMemo(() => [...clientIds].sort().join(','), [clientIds]);
+  return useMemo(() =>
+    tasks.filter(t => clientIds.has(t.clientId)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tasks, clientIdsKey]
+  );
+}

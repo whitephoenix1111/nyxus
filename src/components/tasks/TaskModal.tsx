@@ -19,12 +19,20 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-function ClientCombobox({ value, onChange, error }: {
+function ClientCombobox({ value, onChange, error, allowedClientIds }: {
   value: string;
   onChange: (id: string, name: string, company: string) => void;
   error?: string;
+  allowedClientIds?: Set<string>; // undefined = Manager, thấy tất cả
 }) {
-  const clients      = useClientStore(s => s.clients);
+  const allClients   = useClientStore(s => s.clients);
+  // Sales chỉ thấy client của mình; Manager thấy tất cả
+  const clients      = useMemo(() =>
+    allowedClientIds
+      ? allClients.filter(c => allowedClientIds.has(c.id))
+      : allClients,
+    [allClients, allowedClientIds]
+  );
   const [query, setQuery] = useState('');
   const [open,  setOpen]  = useState(false);
   const ref              = useRef<HTMLDivElement>(null);
@@ -106,9 +114,10 @@ const EMPTY: Omit<Task, 'id' | 'createdAt'> = {
   notes:        '',
 };
 
-export function TaskModal({ onClose, onSave }: {
+export function TaskModal({ onClose, onSave, allowedClientIds }: {
   onClose: () => void;
   onSave:  (data: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
+  allowedClientIds?: Set<string>; // undefined = Manager
 }) {
   const opportunities = useOpportunityStore(s => s.opportunities);
   const [form, setForm]     = useState(EMPTY);
@@ -187,6 +196,7 @@ export function TaskModal({ onClose, onSave }: {
               <ClientCombobox
                 value={form.clientId}
                 error={errors.clientId}
+                allowedClientIds={allowedClientIds}
                 onChange={(id, name, company) => {
                   setForm(f => ({ ...f, clientId: id, clientName: name, company, opportunityId: undefined }));
                   if (errors.clientId) setErrors(e => ({ ...e, clientId: '' }));
@@ -209,16 +219,10 @@ export function TaskModal({ onClose, onSave }: {
               </Field>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Deadline">
-                <input className="input-base w-full" type="date"
-                  value={form.dueDate ?? ''} onChange={e => setField('dueDate', e.target.value)} />
-              </Field>
-              <Field label="Giao cho">
-                <input className="input-base w-full" placeholder="Tên người..."
-                  value={form.assignedTo ?? ''} onChange={e => setField('assignedTo', e.target.value)} />
-              </Field>
-            </div>
+            <Field label="Deadline">
+              <input className="input-base w-full" type="date"
+                value={form.dueDate ?? ''} onChange={e => setField('dueDate', e.target.value)} />
+            </Field>
 
             <Field label="Ghi chú">
               <textarea className="input-base w-full resize-none" rows={3}

@@ -2,6 +2,8 @@ import { ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { ClientWithStats } from '@/types';
 import { Avatar, TagBadge } from './_atoms';
+import { OwnerBadge } from '@/components/ui/OwnerBadge';
+import { useIsManager } from '@/store/useAuthStore';
 
 interface ClientCardProps {
   client: ClientWithStats;
@@ -9,10 +11,9 @@ interface ClientCardProps {
 }
 
 export function ClientCard({ client, onClick }: ClientCardProps) {
-  // Số đơn = số Opportunity Won
+  const isManager = useIsManager();
   const orderCount = client.opportunities.filter(o => o.status === 'Won').length;
 
-  // Ngày liên hệ gần nhất từ tất cả opportunities
   const lastContact = client.opportunities
     .map(o => o.lastContactDate)
     .filter(Boolean)
@@ -81,7 +82,10 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
 
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>Liên hệ cuối</span>
-        <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>{lastContactLabel}</span>
+        <div className="flex items-center gap-2">
+          {isManager && <OwnerBadge ownerId={client.ownerId} />}
+          <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>{lastContactLabel}</span>
+        </div>
       </div>
     </button>
   );

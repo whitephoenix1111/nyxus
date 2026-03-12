@@ -85,7 +85,6 @@ export function ExistingClientModal({ onClose, onSave }: ExistingClientModalProp
         <div className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
 
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 shrink-0"
             style={{ borderBottom: '1px solid var(--color-border)' }}>
             <div className="flex items-center gap-3">
@@ -108,7 +107,6 @@ export function ExistingClientModal({ onClose, onSave }: ExistingClientModalProp
             </button>
           </div>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
             <div className="flex items-center gap-3 py-1">
               <Avatar initials={preview} size="lg" />
@@ -144,7 +142,6 @@ export function ExistingClientModal({ onClose, onSave }: ExistingClientModalProp
               </Field>
             </div>
 
-            {/* Giá trị hợp đồng — bắt buộc */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Giá trị hợp đồng (USD) *" error={errors.value}>
                 <input className="input-base w-full" placeholder="50000" type="number" min={0}
@@ -206,7 +203,6 @@ export function ExistingClientModal({ onClose, onSave }: ExistingClientModalProp
             </Field>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
             style={{ borderTop: '1px solid var(--color-border)' }}>
             <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Hủy</button>
