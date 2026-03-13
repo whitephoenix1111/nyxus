@@ -1,42 +1,97 @@
 # LLD — Component Breakdown
 
+> File trước: `lld-store.md`
+
 ---
 
-## 1. Component Tree (Home Dashboard)
+## 1. Component Tree
 
 ```
-app/layout.tsx
-├── <TopNav />
-│     ├── Logo (lime dot grid)
-│     ├── NavLinks: [Home, Leads, Opportunities, Clients, Forecast, Documents]
-│     ├── SearchBar
-│     ├── AddButton (+)
-│     └── UserAvatar
-│
-app/page.tsx  (Dashboard)
+app/layout.tsx (RootLayout)
+└── <TopNav />
+      ├── Logo (lime dot grid)
+      ├── NavLinks: Home · Leads · Opportunities · Clients · Forecast · Activities · Documents
+      │     Active: bg-[#1A1A1A] rounded-full
+      ├── UserAvatar
+      └── Logout button → <ConfirmDialog variant="warning" />
+
+app/page.tsx (Dashboard)
 ├── <PageHeader title="Home" />
 ├── <StatsBar />
-│     ├── <StatCard status="Lead" />       ← lime bg, active state
+│     ├── <StatCard status="Lead" />
 │     ├── <StatCard status="Proposal" />
-│     ├── <StatCard status="Forecast" />
-│     └── <StatCard status="Order" />
+│     ├── <StatCard status="Negotiation" />
+│     └── <StatCard status="Won" />
 │
-├── <MainPanel />
-│     ├── <SalesTabBar />                  ← All Sales / Transactions / Tools / Reports
-│     ├── <FilterToolbar />                ← icon buttons (time, people, phone, timer...)
+├── <MainPanel /> (flex-1)
 │     └── <KPISection />
-│           ├── <KPIScatterChart />        ← Recharts ScatterChart
+│           ├── <KPIScatterChart />   ← Recharts ScatterChart
 │           └── <KPISummary />
-│                 ├── Total Sales value + trend
-│                 ├── Open Quotes count + trend
+│                 ├── Total weighted revenue + trend
+│                 ├── Open deals count + trend
 │                 └── Opportunities count + trend
 │
-└── <SidePanel />
+└── <SidePanel /> (w-80)
       ├── <RemindersWidget />
-      │     ├── <ReminderCard type="stale_lead" />
-      │     └── <ReminderCard type="no_contact" />
+      │     ├── <ReminderCard type="overdue_task" />
+      │     ├── <ReminderCard type="stale_deal" />
+      │     └── <ReminderCard type="expiring_proposal" />
       └── <TopClientsWidget />
-            └── <ClientCard />  (×25, 2-column grid)
+            └── <ClientMiniCard /> ×N (2-column grid)
+
+app/leads/page.tsx
+├── <PageHeader />
+├── <OwnerFilter /> (manager only)
+├── <LeadCard /> ×N
+│     ├── Tags row (h-[46px] cố định)
+│     ├── Client name, company, value
+│     ├── <OwnerBadge /> (manager only)
+│     └── Status bar bottom
+├── <LeadModal />          ← Tạo lead + optional first task
+├── <PromoteModal />       ← Thăng stage; Won/Lost có confirm thêm
+└── <AssignLeadModal />    ← Manager only
+
+app/opportunities/page.tsx
+├── <PageHeader />
+├── Filter tabs: All | Lead | Qualified | Proposal | Negotiation | Won | Lost
+├── <OwnerFilter /> (manager only)
+└── Table: clientName · company · value · confidence · status badge · lastContactDate
+    (Read-only — không có action buttons)
+
+app/clients/page.tsx
+├── <PageHeader />
+├── <OwnerFilter /> (manager only)
+├── <ClientCard /> ×N (grid)
+│     └── <OwnerBadge /> góc dưới (manager only)
+└── <DetailPanel /> (slide-over)
+      ├── Tab "Cơ hội" — danh sách opportunities
+      ├── Tab "Tài liệu" — documents của client
+      └── canEdit guard: ẩn Edit/Delete nếu non-owner
+
+app/forecast/page.tsx  (Manager only)
+├── Header: Weighted Revenue = SUM(value × confidence/100)
+├── Funnel chart by stage
+├── Table: opportunities trừ Lost
+│     Columns: Client · Value · Confidence (%) · Weighted Value · Stage
+└── Confidence fine-tune inline (trong range của stage)
+
+app/activities/page.tsx
+├── <KpiBar />            ← tổng hoạt động, tỷ lệ positive, breakdown outcome
+├── <OwnerFilter /> (manager only)
+├── Filter: type + outcome + search
+└── Timeline grouped by month (mới nhất trước)
+      └── <ActivityCard />
+            ├── Expand → notes + nextAction + nextActionDate
+            └── nextActionDate: badge vàng (pending) / đỏ (overdue)
+
+app/documents/page.tsx
+├── <OwnerFilter /> (manager only)
+├── Filter: category + search
+├── <DocumentCard /> ×N
+└── <UploadDocModal />
+      ├── Searchable client select (chỉ client của mình)
+      ├── Deal select filter theo clientId (optional)
+      └── category / type select
 ```
 
 ---
@@ -49,8 +104,8 @@ interface StatCardProps {
   status: OpportunityStatus;
   count: number;
   totalValue: number;
-  delta?: number;         // +28, hiển thị màu xanh/đỏ
-  isActive?: boolean;     // true → lime background
+  delta?: number;       // % change — xanh nếu dương, đỏ nếu âm
+  isActive?: boolean;   // true → lime background (.card-brand)
 }
 ```
 
@@ -63,73 +118,114 @@ interface KPIScatterChartProps {
     status: OpportunityStatus;
     clientName: string;
   }>;
-  averageValue: number;   // Cho ReferenceLine
-  height?: number;        // default: 320
+  averageValue: number;  // ReferenceLine ngang
+  height?: number;       // default: 320
 }
 ```
-**Recharts config quan trọng:**
-- `<Scatter>` với `shape` custom: circle có `fill="#DFFF00"` nếu status === 'Order', `fill="#555"` nếu khác
-- `<ReferenceLine y={averageValue} stroke="#DFFF00" strokeDasharray="4 4" />`
-- `<Tooltip>` custom styled với dark background
-- X-axis: label tháng viết thường (jan, feb, ...)
+
+Recharts config:
+- `<Scatter shape>` custom: `fill="#DFFF00"` nếu Won, `fill="#555"` nếu khác
+- `<ReferenceLine y={averageValue} stroke="#DFFF0088" strokeDasharray="4 4" />`
+- `<Tooltip>` custom dark background
+- X-axis: tên tháng viết thường (jan, feb, ...)
 
 ### `<ReminderCard />`
 ```typescript
 interface ReminderCardProps {
+  type: 'overdue_task' | 'stale_deal' | 'expiring_proposal';
   count: number;
-  label: string;          // "Leads, prospects, and customer without..."
+  label: string;
+  description: string;
   icon: LucideIcon;
-  accentColor?: string;   // default: lime
+  accentColor?: string;  // default: lime; warning: amber; danger: red
 }
 ```
 
-### `<ClientCard />`
+### `<LeadCard />`
 ```typescript
-interface ClientCardProps {
-  clientName: string;
-  company: string;
-  avatar: string;         // initials hoặc image URL
-  totalValue: number;
+interface LeadCardProps {
+  client: Client;
+  opportunity: Opportunity;
+  tags: ClientTag[];        // computed tags
+  onPromote: (id: string) => void;
+  onAssign?: (id: string) => void;  // manager only
 }
 ```
 
+Tags row: `h-[46px]` cố định — tránh layout shift khi tags khác nhau.
+
+### `<PromoteModal />`
+```typescript
+interface PromoteModalProps {
+  opportunity: Opportunity;
+  onClose: () => void;
+}
+```
+
+Logic:
+- Hiển thị stages hợp lệ tiếp theo (không cho skip ngược)
+- Confidence preview tự tính theo `STAGE_DEFAULT_CONFIDENCE[selectedStage]`
+- Fine-tune slider hiện nếu stage có range
+- Won / Lost: confirm dialog thêm trước khi thực thi
+
+### `<AddActivityModal />`
+```typescript
+interface AddActivityModalProps {
+  clientId?: string;         // pre-fill nếu mở từ client detail
+  opportunityId?: string;    // pre-fill
+  onClose: () => void;
+}
+```
+
+2 bước:
+1. Form log activity: type, title, date, outcome, nextAction, nextActionDate, promoteOpportunityTo (optional)
+2. Nếu nextAction có giá trị → confirm "Tạo task follow-up?" với deadline = nextActionDate
+
+### `<ConfirmDialog />`
+```typescript
+interface ConfirmDialogProps {
+  title: string;
+  message: string;
+  variant: 'danger' | 'warning' | 'info';
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+```
+
+### `<OwnerBadge />` / `<OwnerFilter />`
+- `<OwnerBadge ownerId={string} />` — chỉ render nếu `useIsManager()` trả true
+- `<OwnerFilter onChange={(ownerId) => void} />` — chỉ render nếu manager; dropdown danh sách salespersons
+
 ---
 
-## 3. Layout & Styling Notes
+## 3. Layout & Grid
 
-### Grid System (Home page)
+### Dashboard
 ```
-┌─────────────────────────────┬──────────────┐
-│  Main Content (flex-1)      │  SidePanel   │
-│                             │  (w-80)      │
-│  StatsBar (full width)      │  Reminders   │
-│  ──────────────────         │              │
-│  SalesTabBar                │  Top Clients │
-│  KPISection                 │              │
-└─────────────────────────────┴──────────────┘
+┌──────────────────────────────────┬──────────┐
+│  StatsBar (full width, 4 cards)  │          │
+├──────────────────────────────────┤ SidePanel│
+│  KPISection                      │ w-80     │
+│    KPIScatterChart (flex-1)      │ Reminders│
+│    KPISummary                    │          │
+│                                  │ Top      │
+│                                  │ Clients  │
+└──────────────────────────────────┴──────────┘
 ```
 
-### Color Usage Rules
-| Element | Color |
+SidePanel collapse (`hidden`) trên màn hình `< 1280px`.
+
+### Color Rules
+
+| Element | Token |
 |---|---|
-| Page background | `#000000` |
-| Card background | `#111111` |
-| Card hover | `#1A1A1A` |
-| Active StatCard bg | `#DFFF00` |
-| Active StatCard text | `#000000` |
-| Accent / highlights | `#DFFF00` |
-| Body text | `#FFFFFF` |
-| Muted text | `#888888` |
-| Border | `#222222` |
-
-### Typography
-- Display numbers (StatCard, KPI): `font-bold`, large size (text-3xl+)
-- Labels: `text-xs uppercase tracking-widest text-gray-500`
-- Nav links: `text-sm font-medium`
-
----
-
-## 4. TopNav Behavior
-- Active route: tab có `background: #1A1A1A`, `border-radius: 9999px`
-- Search bar: `bg-[#111]`, border `#333`, focus border `#DFFF00`
-- `+` button: `bg-[#1A1A1A]` hover `bg-[#DFFF00]` với transition
+| Page background | `--color-bg` (#000) |
+| Card background | `--color-surface` (#111) |
+| Card hover | `--color-surface-hover` (#1A1A1A) |
+| Active StatCard | `.card-brand` (lime bg, black text) |
+| Accent / CTA | `--color-brand` (#DFFF00) |
+| Body text | `--color-text-primary` (#FFF) |
+| Muted text | `--color-text-muted` (#888) |
+| Border default | `--color-border` (#222) |
+| Overdue badge | `--color-danger` (#EF4444) |
+| Warning badge | `--color-warning` (#F59E0B) |

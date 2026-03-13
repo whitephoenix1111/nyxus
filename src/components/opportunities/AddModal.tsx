@@ -10,7 +10,7 @@ const labelCls = 'block text-xs text-[#555] mb-1 uppercase tracking-widest';
 
 export function AddModal({ onClose, onAdd }: {
   onClose: () => void;
-  onAdd: (d: Omit<Opportunity, 'id'>) => void;
+  onAdd: (d: Omit<Opportunity, 'id' | 'ownerId'>) => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({

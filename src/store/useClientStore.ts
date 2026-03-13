@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { useMemo } from 'react';
 import type { Client, ClientWithStats, Opportunity } from '@/types';
+import { computeClientTags } from '@/lib/computeClientTags';
 
 interface ClientStore {
   clients: Client[];
@@ -171,6 +172,23 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
       };
     });
   }, [clients, opportunities]);
+}
+
+/**
+ * Phase 12 — selector trả về ClientWithStats với tags đã merge computed.
+ * Tags trong `client.tags` được replace bằng kết quả computeClientTags():
+ *   - manual tags (enterprise, mid-market) giữ nguyên nếu có trong DB
+ *   - computed tags (new-lead, warm, cold, priority) tính lại mỗi render
+ */
+export function useClientsWithComputedTags(opportunities: Opportunity[]) {
+  const withStats = useClientsWithStats(opportunities);
+
+  return useMemo((): ClientWithStats[] => {
+    return withStats.map(client => ({
+      ...client,
+      tags: computeClientTags(client, opportunities),
+    }));
+  }, [withStats, opportunities]);
 }
 
 export function useClientIndustries() {

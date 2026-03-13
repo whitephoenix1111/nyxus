@@ -14,75 +14,69 @@
 | State | Zustand |
 | Charts | Recharts |
 | Icons | Lucide React |
-| Data | JSON files (local) |
+| Data | JSON files (local — dev only) |
 
 ---
 
-## 2. Domain Model
+## 2. Cấu trúc thư mục
 
 ```
-POST /api/leads  →  tạo đồng thời:
-  CLIENT (isProspect: true)          OPPORTUNITY (Lead, confidence: 15%)
-    │  clientId (hard FK) ──────────────────────────────────────────►│
-
-  Khi promote → Qualified: client.isProspect = false
-
-  Client ──► Opportunity ──► Activity
-                │                │
-                status: Lead → Qualified → Proposal → Negotiation → Won/Lost
-                confidence: mặc định theo stage, fine-tune trong range
-                              │
-                              nextAction: string
-                              nextActionDate?: string  ← due date thật
-                              promoteOpportunityTo?    ← promote khi lưu
+data/*.json              — dữ liệu thô (clients, opportunities, activities, tasks, documents, users)
+src/app/api/             — API routes (Next.js route handlers)
+src/store/               — Zustand stores + selectors
+src/app/                 — Pages
+src/components/          — UI components
+src/lib/                 — Helpers: json-db, auth, utils
+src/types/index.ts       — Tất cả TypeScript types
+middleware.ts            — JWT guard tất cả routes
 ```
-
-**Confidence mặc định:**
-
-| Stage | Default | Range |
-|---|---|---|
-| Lead | 15% | ✗ |
-| Qualified | 35% | ±15% |
-| Proposal | 60% | ±15% |
-| Negotiation | 80% | ±10% |
-| Won | 100% | ✗ |
-| Lost | 0% | ✗ |
-
-**Join**: `Opportunity.clientId → Client.id` (hard FK). Không join bằng company name.
 
 ---
 
-## 3. Kiến trúc tổng thể
+## 3. Domain Model & Quan hệ FK
 
 ```
-Next.js App Router
-  Pages: / | /leads | /opportunities | /clients | /forecast | /activities | /documents
+users.json                 (độc lập — auth + ownership)
 
-  Zustand Stores
-    useOpportunityStore | useClientStore | useActivityStore
-
-  Data Layer (JSON)
-    data/opportunities.json | data/clients.json | data/activities.json
+clients.json
+  └─ opportunities.json    (clientId FK)
+       └─ activities.json  (clientId + opportunityId FK)
+            └─ tasks.json  (clientId + opportunityId FK)
+            └─ documents.json (clientId + opportunityId? FK)
 ```
+
+**Ownership gắn tại Client** — `client.ownerId → User.id`.
+Mọi resource con (opp, activity, task, document) kế thừa quyền từ `client.ownerId`.
+Manager bypass toàn bộ — không cần check ownership.
 
 ---
 
 ## 4. Data Flow
 
 ```
-JSON File → API Route → Zustand Store → React Components (via selectors)
+JSON File → API Route → Zustand Store → React Component (via selectors)
+```
 
-API đặc biệt:
+**API đặc biệt:**
 
+```
 POST /api/leads
-  → tạo Client (isProspect: true) + Opportunity (Lead, 15%)
-  → trả về { client, opportunity }
+  → Tạo Client (isProspect: true) + Opportunity (Lead, confidence: 15%)
+  → clientId hard FK
+  → Trả về { client, opportunity }
 
 POST /api/activities  [nếu có promoteOpportunityTo]
-  → PATCH opportunity: status mới + confidence mặc định stage mới
-  → append statusHistory
-  → nếu → Qualified: PATCH client.isProspect = false
-  → luôn PATCH opportunity.lastContactDate = activity.date
+  → Lưu activity
+  → PATCH opportunity.lastContactDate = activity.date
+  → PATCH opportunity.status = newStatus
+  → PATCH opportunity.confidence = STAGE_DEFAULT_CONFIDENCE[newStatus]
+  → Append statusHistory entry
+  → Nếu newStatus === 'Qualified': PATCH client.isProspect = false
+
+DELETE /api/clients/[id]  (soft delete)
+  → archivedAt = today
+  → Cascade xóa: opps chưa Won + tasks pending
+  → Giữ: activities, tasks done, opps Won
 ```
 
 ---
@@ -91,24 +85,39 @@ POST /api/activities  [nếu có promoteOpportunityTo]
 
 ```
 app/
-├── page.tsx                   # Dashboard
-├── leads/page.tsx
-├── opportunities/page.tsx
-├── clients/page.tsx
-├── forecast/page.tsx
-├── activities/page.tsx
-├── documents/page.tsx
+├── page.tsx                    # Dashboard — Stats, KPI, Reminders, Top Clients
+├── leads/page.tsx              # Sales: ownerId === me | Manager: tất cả
+├── opportunities/page.tsx      # Read-only — không có action
+├── clients/page.tsx            # isProspect=false; Sales: owner only
+├── forecast/page.tsx           # Manager only — redirect / nếu là salesperson
+├── activities/page.tsx         # Filter qua ownerClientIds Set
+├── documents/page.tsx          # OwnerFilter dropdown cho Manager
+├── login/page.tsx
 └── api/
-    ├── leads/route.ts          # POST — tạo Client + Opportunity đồng thời
+    ├── auth/
+    │   ├── login/route.ts      # POST — set JWT cookie
+    │   ├── me/route.ts         # GET — session user hiện tại
+    │   └── logout/route.ts     # POST — clear cookie
+    ├── users/route.ts          # GET — không trả passwordHash, filter ?role=
+    ├── leads/
+    │   ├── route.ts            # POST — tạo Client + Opportunity đồng thời
+    │   └── [id]/assign/route.ts # PATCH — Manager only
     ├── opportunities/
-    │   ├── route.ts            # GET (?status=), POST (internal only)
-    │   └── [id]/route.ts       # PATCH, DELETE
+    │   ├── route.ts            # GET (?status= ?clientId=), POST (internal)
+    │   └── [id]/route.ts       # GET, PATCH, DELETE
     ├── clients/
     │   ├── route.ts            # GET (?industry= ?tag= ?search= ?isProspect=), POST
+    │   ├── [id]/route.ts       # GET, PATCH, DELETE (soft delete + cascade)
+    │   └── existing/route.ts   # POST — import khách hàng cũ
+    ├── activities/
+    │   ├── route.ts            # GET (?type= ?outcome= ?clientId= ?search=), POST + side effects
     │   └── [id]/route.ts       # GET, PATCH, DELETE
-    └── activities/
-        ├── route.ts            # GET (?type= ?outcome= ?clientId= ?search=), POST + side effects
-        └── [id]/route.ts       # GET, PATCH, DELETE
+    ├── tasks/
+    │   ├── route.ts            # GET, POST
+    │   └── [id]/route.ts       # PATCH (auto set/clear completedAt), DELETE
+    └── documents/
+        ├── route.ts            # GET (filter theo client.ownerId), POST
+        └── [id]/route.ts       # PATCH, DELETE (guard: client.ownerId === me hoặc manager)
 ```
 
 ---
@@ -117,19 +126,26 @@ app/
 
 | Store | State | Key Selectors |
 |---|---|---|
-| `useOpportunityStore` | `opportunities[]` | `useStatsByStatus`, `useMonthlyChartData`, `useForecastRevenue`, `useTopClients`, `useStaleLeads(activities)`, `useOverdueTasks(activities)`, `useReminders(activities)` |
-| `useClientStore` | `clients[]` | `useClientsWithStats(opps)` — join bằng clientId, `useClientIndustries()`, `useTopClientsByValue(opps, limit)` |
-| `useActivityStore` | `activities[]` | `useActivitiesByType`, `useActivitiesByOutcome`, `useRecentActivities`, `useActivitiesForClient` |
+| `useAuthStore` | session user, role | `useCurrentUser()`, `useIsManager()`, `useIsSalesperson()` |
+| `useUsersStore` | users[] | `useUserById()`, `useSalespersons()` |
+| `useClientStore` | clients[] | `useClientsWithStats(opps)`, `useClientIndustries()`, `useTopClientsByValue(opps, limit)` |
+| `useOpportunityStore` | opportunities[] | `useStatsByStatus()`, `useMonthlyChartData()`, `useForecastRevenue()`, `useTopClients()`, `useStaleLeads(activities)`, `useOverdueTasks(activities)`, `useReminders(activities)` |
+| `useActivityStore` | activities[] | `useActivitiesByType()`, `useActivitiesByOutcome()`, `useRecentActivities()`, `useActivitiesForClient()` |
+| `useTaskStore` | tasks[] | `useTasksForClients(Set)` |
+| `useDocumentStore` | documents[] | `useDocumentsForClient()`, `toggleStar()` |
+| `useToastStore` | toasts[] | `toast.success/error/warning/info()` |
+
+**Quy tắc cross-store**: Stores không import lẫn nhau. Selectors cần data từ store khác nhận tham số thay vì import trực tiếp. Ví dụ: `useStaleLeads(activities: Activity[])` thay vì import `useActivityStore` bên trong `useOpportunityStore`.
 
 ---
 
-## 7. Build Status
+## 7. Phân vai trang
 
-- ✅ Phase 1–3: Dashboard, Leads, Opportunities, Clients, Forecast, Activities
-- ⚠️ Phase 4 còn lại (xem `CODING_DELTA.md`):
-  1. Client isProspect + `/api/leads`
-  2. `Activity.nextActionDate` + Reminders overdue
-  3. Confidence theo stage
-  4. Activity promote UI + API side effects
-  5. Documents API
-  6. Search toàn cục
+| Trang | Sales thấy | Manager thấy | Ghi chú |
+|---|---|---|---|
+| `/leads` | `ownerId === me` | Tất cả | Workspace chính của sales |
+| `/opportunities` | `ownerId === me` | Tất cả | Read-only |
+| `/clients` | `ownerId === me` & `isProspect=false` | Tất cả | Sửa/Xóa ẩn nếu non-owner |
+| `/activities` | Client có `ownerId === me` | Tất cả | Filter qua `ownerClientIds` Set |
+| `/documents` | Client có `ownerId === me` | Tất cả | OwnerFilter dropdown cho Manager |
+| `/forecast` | ❌ redirect `/` | ✅ Full access | Manager only |

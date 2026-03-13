@@ -1,5 +1,6 @@
-import type { OpportunityStatus, ClientTag } from '@/types';
-import { STATUS_STYLE, STATUS_LABELS, TAG_STYLE } from './_constants';
+import type { OpportunityStatus } from '@/types';
+import { STATUS_STYLE, STATUS_LABELS } from './_constants';
+export { TagBadge } from '@/components/ui/TagBadge';
 
 export function Avatar({ initials, size = 'md' }: { initials: string; size?: 'sm' | 'md' | 'lg' }) {
   const cls = { sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-14 w-14 text-lg' }[size];
@@ -17,16 +18,6 @@ export function StatusBadge({ status }: { status: OpportunityStatus }) {
     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
       style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>
       {STATUS_LABELS[status]}
-    </span>
-  );
-}
-
-export function TagBadge({ tag }: { tag: ClientTag }) {
-  const s = TAG_STYLE[tag];
-  return (
-    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-      style={{ background: s.bg, color: s.text }}>
-      {tag}
     </span>
   );
 }

@@ -7,6 +7,7 @@ import { useClientStore } from '@/store/useClientStore';
 import { useActivityStore } from '@/store/useActivityStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { formatCurrencyFull } from '@/lib/utils';
+import { computeClientTags } from '@/lib/computeClientTags';
 import type { Opportunity, OpportunityStatus } from '@/types';
 import { LeadModal, emptyLeadForm, type LeadFormState } from '@/components/leads/LeadModal';
 import { PromoteModal } from '@/components/leads/PromoteModal';
@@ -19,9 +20,8 @@ import { AssignLeadModal } from '@/components/leads/AssignLeadModal';
 export default function LeadsPage() {
   const currentUser = useCurrentUser();
   const isManager   = useIsManager();
-  // Manager có full quyền; salesperson chỉ edit lead của mình (check ownerId ở LeadCard)
-  const canCreate   = true; // cả 2 role đều tạo được lead
-  const canEdit     = true; // edit/delete check ownerId ở LeadCard level
+  const canCreate   = true;
+  const canEdit     = true;
 
   const { opportunities, fetchOpportunities, isLoading, updateOpportunity, updateStatus, deleteOpportunity } = useOpportunityStore();
   const { clients, addLead, fetchClients, assignLead } = useClientStore();
@@ -44,8 +44,8 @@ export default function LeadsPage() {
     fetchActivities();
     fetchClients();
     fetchTasks();
-    if (isManager) fetchUsers();
-  }, [fetchOpportunities, fetchActivities, fetchClients, fetchTasks, fetchUsers, isManager]);
+    fetchUsers();
+  }, [fetchOpportunities, fetchActivities, fetchClients, fetchTasks, fetchUsers]);
 
   const ACTIVE_STATUSES = ['Lead', 'Qualified', 'Proposal', 'Negotiation'];
 
@@ -68,7 +68,7 @@ export default function LeadsPage() {
       );
     }
     return list;
-  }, [opportunities, clients, search, sortStale]);
+  }, [opportunities, clients, isManager, currentUser, ownerFilter, search, sortStale]);
 
   const lostLeads = useMemo(() => {
     let list = opportunities.filter(o =>
@@ -85,7 +85,7 @@ export default function LeadsPage() {
     return [...list].sort((a, b) =>
       new Date(b.lastContactDate).getTime() - new Date(a.lastContactDate).getTime()
     );
-  }, [opportunities, clients, search]);
+  }, [opportunities, clients, isManager, currentUser, search]);
 
   // Map clientId → có pending task không (dùng cho badge LeadCard)
   const pendingClientIds = useMemo(() => {
@@ -93,6 +93,16 @@ export default function LeadsPage() {
     tasks.forEach(t => { if (t.status === 'pending') ids.add(t.clientId); });
     return ids;
   }, [tasks]);
+
+  // Phase 12: Map clientId → computed tags
+  const clientTagsMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof computeClientTags>>();
+    clients.forEach(client => {
+      const clientOpps = opportunities.filter(o => o.clientId === client.id);
+      map.set(client.id, computeClientTags(client, clientOpps));
+    });
+    return map;
+  }, [clients, opportunities]);
 
   const staleCount = useMemo(() => leads.filter(o => daysSince(o.lastContactDate) > 3).length, [leads]);
   const totalValue = useMemo(() => leads.reduce((s, o) => s + o.value, 0), [leads]);
@@ -109,7 +119,6 @@ export default function LeadsPage() {
     if (result) {
       await fetchOpportunities();
 
-      // Nếu user điền task đầu tiên → tạo task ngay
       if (form.firstTaskTitle.trim()) {
         await addTask({
           title:         form.firstTaskTitle.trim(),
@@ -234,7 +243,6 @@ export default function LeadsPage() {
           <div className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {leads.map(opp => {
-                // Manager: full quyền. Salesperson: chỉ edit lead của mình
                 const canEditThis = isManager || opp.ownerId === currentUser?.id;
                 return (
                 <LeadCard
@@ -243,6 +251,7 @@ export default function LeadsPage() {
                   deleteConfirm={deleteConfirm}
                   hasPendingTask={pendingClientIds.has(opp.clientId)}
                   canEdit={canEditThis}
+                  computedTags={clientTagsMap.get(opp.clientId)}
                   onPromote={canEditThis ? setPromoteTarget : undefined}
                   onEdit={canEditThis ? setEditTarget : undefined}
                   onAssign={isManager ? setAssignTarget : undefined}

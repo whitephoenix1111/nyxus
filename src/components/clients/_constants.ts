@@ -23,7 +23,19 @@ export const TAG_STYLE: Record<ClientTag, { bg: string; text: string }> = {
   'new-lead':   { bg: '#001a0f', text: '#42f5a7' },
 };
 
+export const TAG_LABELS: Record<ClientTag, string> = {
+  'enterprise':   'Doanh nghiệp lớn',
+  'mid-market':   'Doanh nghiệp vừa',
+  'priority':     'Ưu tiên',
+  'warm':         'Tiềm năng cao',
+  'cold':         'Tiềm năng thấp',
+  'new-lead':     'Lead mới',
+};
+
 export const ALL_TAGS: ClientTag[] = ['enterprise', 'mid-market', 'priority', 'warm', 'cold', 'new-lead'];
+
+/** Tags do human gán thủ công — không tính lại bằng computed logic */
+export const MANUAL_TAGS: ClientTag[] = ['enterprise', 'mid-market'];
 
 export const INDUSTRIES = [
   'Consulting', 'Defense', 'Design', 'Finance', 'Investment',

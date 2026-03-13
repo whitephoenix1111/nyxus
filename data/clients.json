@@ -52,7 +52,7 @@
       "warm"
     ],
     "notes": "Requested a custom pricing proposal in March.",
-    "isProspect": true,
+    "isProspect": false,
     "createdAt": "2024-11-05"
   },
   {
@@ -89,8 +89,9 @@
       "new-lead"
     ],
     "notes": "Came from LinkedIn outreach. Still evaluating options.",
-    "isProspect": true,
-    "createdAt": "2025-01-08"
+    "isProspect": false,
+    "createdAt": "2025-01-08",
+    "archivedAt": "2026-03-12"
   },
   {
     "ownerId": "usr-001",

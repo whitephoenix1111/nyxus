@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Briefcase, Mail, Phone, Globe, Trash2, Pencil, AlertTriangle } from 'lucide-react';
-import { formatCurrency, formatCurrencyFull } from '@/lib/utils';
-import type { ClientWithStats, OpportunityStatus } from '@/types';
-import { Avatar, StatusBadge, TagBadge } from './_atoms';
+import type { ClientWithStats } from '@/types';
+import { Avatar, TagBadge } from './_atoms';
 import { viIndustry } from './_constants';
+import { useDocumentStore, useDocumentsForClient } from '@/store/useDocumentStore';
+import { DetailPanelOpps } from './DetailPanelOpps';
+import { DetailPanelDocs } from './DetailPanelDocs';
 
 interface DetailPanelProps {
   client: ClientWithStats;
@@ -13,27 +15,24 @@ interface DetailPanelProps {
   onEdit?: () => void;
 }
 
+type PanelTab = 'opps' | 'docs';
+
 export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit }: DetailPanelProps) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [activeTab,   setActiveTab]   = useState<PanelTab>('opps');
 
-  const openOpps = client.opportunities.filter(
-    (o) => o.status !== 'Won' && o.status !== 'Lost'
-  );
+  const { fetchDocuments } = useDocumentStore();
+  const clientDocs = useDocumentsForClient(client.id);
+
+  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+
+  const openOpps = client.opportunities.filter(o => o.status !== 'Won' && o.status !== 'Lost');
 
   function handleDeleteClick() {
     if (!onDelete) return;
-    if (openOpps.length > 0) {
-      setShowConfirm(true);
-    } else {
-      onDelete(client.id);
-      onClose();
-    }
+    if (openOpps.length > 0) setShowConfirm(true);
+    else { onDelete(client.id); onClose(); }
   }
-
-  const byStatus = client.opportunities.reduce((acc, o) => {
-    acc[o.status] = (acc[o.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
 
   return (
     <>
@@ -51,38 +50,20 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
           </button>
           <div className="flex items-center gap-3">
             {canEdit && onEdit && (
-              <button
-                onClick={onEdit}
+              <button onClick={onEdit}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-brand)';
-                  (e.currentTarget as HTMLElement).style.color = 'var(--color-brand)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
-                  (e.currentTarget as HTMLElement).style.color = 'var(--color-text-secondary)';
-                }}
-              >
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-brand)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-brand)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-text-secondary)'; }}>
                 <Pencil size={12} /> Sửa
               </button>
             )}
             {canEdit && onDelete && (
-              <button
-                onClick={handleDeleteClick}
+              <button onClick={handleDeleteClick}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = '#1a0505';
-                  (e.currentTarget as HTMLElement).style.borderColor = '#ef444466';
-                  (e.currentTarget as HTMLElement).style.color = '#ef4444';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = 'var(--color-surface)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
-                  (e.currentTarget as HTMLElement).style.color = 'var(--color-text-secondary)';
-                }}
-              >
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a0505'; (e.currentTarget as HTMLElement).style.borderColor = '#ef444466'; (e.currentTarget as HTMLElement).style.color = '#ef4444'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-surface)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-text-secondary)'; }}>
                 <Trash2 size={12} /> Xóa
               </button>
             )}
@@ -132,90 +113,46 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
                 <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>{client.notes}</p>
               </div>
             )}
-
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Tổng GT', value: formatCurrency(client.totalValue), color: 'var(--color-text-primary)' },
-                { label: 'Cơ hội', value: client.opportunityCount, color: 'var(--color-text-primary)' },
-                { label: 'Dự báo', value: formatCurrency(Math.round(client.forecastValue)), color: 'var(--color-brand)' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-xl px-3 py-2.5"
-                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-faint)' }}>{label}</p>
-                  <p className="text-base font-bold tabular-nums" style={{ color }}>{value}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* Status breakdown */}
-          {Object.keys(byStatus).length > 0 && (
-            <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--color-text-faint)' }}>
-                Phân bổ trạng thái
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {(Object.keys(byStatus) as OpportunityStatus[]).map(s => (
-                  <div key={s} className="flex items-center gap-1.5">
-                    <StatusBadge status={s} />
-                    <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>×{byStatus[s]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Tab bar */}
+          <div className="flex px-6 pt-4 gap-1" style={{ borderBottom: '1px solid var(--color-border)' }}>
+            {([
+              { key: 'opps', label: 'Cơ hội',   count: client.opportunities.length },
+              { key: 'docs', label: 'Tài liệu', count: clientDocs.length },
+            ] as { key: PanelTab; label: string; count: number }[]).map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-t-lg transition-colors"
+                style={{
+                  color:        activeTab === tab.key ? 'var(--color-brand)'          : 'var(--color-text-subtle)',
+                  borderBottom: activeTab === tab.key ? '2px solid var(--color-brand)' : '2px solid transparent',
+                  marginBottom: '-1px',
+                }}>
+                {tab.label}
+                <span className="px-1.5 py-0.5 rounded-full tabular-nums"
+                  style={{
+                    fontSize:   '10px',
+                    background: activeTab === tab.key ? 'var(--color-brand-subtle, #DFFF0022)' : 'var(--color-surface)',
+                    color:      activeTab === tab.key ? 'var(--color-brand)'                   : 'var(--color-text-faint)',
+                  }}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
 
-          {/* Opportunities list */}
-          {client.opportunities.length > 0 ? (
-            <div className="px-6 py-4">
-              <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--color-text-faint)' }}>
-                Tất cả cơ hội
-              </p>
-              <div className="flex flex-col gap-2">
-                {[...client.opportunities].sort((a, b) => b.value - a.value).map(opp => (
-                  <div key={opp.id} className="rounded-xl px-4 py-3"
-                    style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{opp.clientName}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                          {new Date(opp.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                        </p>
-                      </div>
-                      <StatusBadge status={opp.status} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold tabular-nums font-mono" style={{ color: 'var(--color-text-primary)' }}>
-                        {formatCurrencyFull(opp.value)}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-1 w-16 rounded-full overflow-hidden" style={{ background: 'var(--color-border)' }}>
-                          <div className="h-full rounded-full" style={{
-                            width: `${opp.confidence}%`,
-                            background: opp.confidence >= 75 ? 'var(--color-brand)'
-                              : opp.confidence >= 40 ? 'var(--color-status-forecast-text)'
-                              : 'var(--color-text-disabled)',
-                          }} />
-                        </div>
-                        <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>{opp.confidence}%</span>
-                      </div>
-                    </div>
-                    {opp.notes && (
-                      <p className="mt-2 text-xs line-clamp-2" style={{ color: 'var(--color-text-subtle)' }}>{opp.notes}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="px-6 py-8 text-center">
-              <p className="text-sm" style={{ color: 'var(--color-text-faint)' }}>Chưa có cơ hội nào.</p>
-            </div>
+          {activeTab === 'opps' && <DetailPanelOpps client={client} />}
+          {activeTab === 'docs' && (
+            <DetailPanelDocs
+              clientId={client.id}
+              clientName={client.name}
+              company={client.company}
+            />
           )}
         </div>
       </div>
 
-      {/* Confirm dialog */}
+      {/* Confirm soft-delete */}
       {showConfirm && (
         <>
           <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-[2px]" onClick={() => setShowConfirm(false)} />
@@ -241,7 +178,7 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setShowConfirm(false)} className="btn-ghost text-xs px-4 py-2">Hủy</button>
                 <button
-                  onClick={() => { setShowConfirm(false); onDelete(client.id); onClose(); }}
+                  onClick={() => { setShowConfirm(false); onDelete!(client.id); onClose(); }}
                   className="text-xs px-4 py-2 rounded-lg font-medium transition-all"
                   style={{ background: '#7f1d1d', color: '#fca5a5', border: '1px solid #ef444444' }}>
                   Lưu trữ khách hàng

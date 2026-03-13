@@ -8,9 +8,10 @@
 ## 1. Mục tiêu sản phẩm
 
 Nyxus là Sales CRM dashboard tập trung vào:
-- **Visibility**: Nhìn thấy toàn bộ pipeline từ Contact → Won trong một màn hình.
-- **Velocity**: Phát hiện ngay bottleneck, stale deals, tasks sắp đến hạn.
-- **Forecasting**: Dự báo doanh thu dựa trên `confidence` score gắn với stage — không phải cảm tính cá nhân.
+
+- **Visibility** — Nhìn thấy toàn bộ pipeline từ Lead đến Won trong một màn hình.
+- **Velocity** — Phát hiện ngay bottleneck, stale deals, tasks sắp đến hạn.
+- **Forecasting** — Dự báo doanh thu dựa trên `confidence` gắn với stage — không phải cảm tính cá nhân.
 
 **Người dùng mục tiêu**: Sales Manager và Sales Rep trong team B2B, quy mô 5–50 người.
 
@@ -18,51 +19,58 @@ Nyxus là Sales CRM dashboard tập trung vào:
 
 ## 2. Triết lý Pipeline
 
-### Chiều dữ liệu thực tế B2B
+### Chiều dữ liệu B2B thực tế
 
-Dữ liệu không bắt đầu từ Client — mà từ **Contact** (người vừa gặp). Client chỉ được tạo khi deal đủ nghiêm túc để qualify:
+Dữ liệu không bắt đầu từ Client mà từ một **contact** vừa gặp. Client chỉ được kích hoạt khi deal đủ nghiêm túc để qualify:
 
 ```
 Contact (gặp lần đầu)
-  │  Qualify (BANT: Budget, Authority, Need, Timeline)
+  │  Sales nhập: tên, email, công ty, deal value
   ▼
-Client (activated) ──► Opportunity ──► Activity
+POST /api/leads
+  → Client (isProspect: true)  +  Opportunity (Lead, confidence: 15%)
+  → clientId hard FK
+
+  Promote → Qualified
+  → client.isProspect = false  →  xuất hiện ở trang Clients
 ```
 
-**Giải pháp**: Client có field `isProspect`. Tạo Lead → Client sinh kèm với `isProspect: true`. Promote → Qualified → `isProspect: false`. Nhân viên không cần tạo Client riêng.
+Nhân viên không tạo Client riêng — `isProspect` xử lý toàn bộ lifecycle.
 
-### Pipeline Stage
+### Pipeline Stages
 
 ```
 Lead → Qualified → Proposal → Negotiation → Won
                                            ↘ Lost
 ```
 
-| Stage | Ý nghĩa | Confidence mặc định | Override range |
+| Stage | Ý nghĩa | Confidence mặc định | Fine-tune range |
 |---|---|---|---|
-| **Lead** | Mới vào, chưa qualify | 15% | ✗ cố định |
-| **Qualified** | BANT pass | 35% | ✓ ±15% |
-| **Proposal** | Đã gửi đề xuất | 60% | ✓ ±15% |
-| **Negotiation** | Đang thương lượng | 80% | ✓ ±10% |
-| **Won** | Chốt đơn | 100% | ✗ cố định |
-| **Lost** | Thất bại — giữ để phân tích | 0% | ✗ cố định |
+| **Lead** | Mới vào, chưa qualify | 15% | Cố định |
+| **Qualified** | BANT pass | 35% | 20–50% |
+| **Proposal** | Đã gửi đề xuất | 60% | 45–75% |
+| **Negotiation** | Đang thương lượng | 80% | 70–90% |
+| **Won** | Chốt đơn | 100% | Cố định |
+| **Lost** | Thất bại — giữ để phân tích | 0% | Cố định |
 
-> **Confidence theo stage** — Khi promote, confidence tự nhảy về mặc định stage mới. Nhân viên chỉ fine-tune trong range. Forecast nhất quán toàn team.
+> Khi promote, confidence tự nhảy về mặc định stage mới. Nhân viên chỉ fine-tune trong range. Forecast nhất quán toàn team.
 
 ---
 
 ## 3. Triết lý Activities & Tasks
 
-| | Log (quá khứ) | Task (tương lai) |
+| | Activity (quá khứ) | Task (tương lai) |
 |---|---|---|
 | Là gì | Tương tác đã xảy ra | Hành động cần làm, có deadline |
-| Fields | `date`, `outcome`, `notes` | `nextAction` (text), `nextActionDate` (ISO date) |
-| Hiển thị | Timeline Activities | Reminders Widget Dashboard |
-| Khi quá hạn | — | Badge đỏ, cảnh báo proactive |
+| Tạo bởi | Nhân viên log thủ công | Tạo thủ công hoặc auto từ `nextAction` của activity |
+| Fields chính | `type`, `outcome`, `notes`, `nextAction`, `nextActionDate` | `title`, `dueDate`, `status` |
+| Hiển thị | Activities page — timeline theo tháng | Tasks section + Dashboard Reminders |
+| Khi quá hạn | — | Badge đỏ, cảnh báo proactive trên Dashboard |
 
-**Overdue Task**: `nextActionDate` đến hạn mà chưa có Activity mới → cảnh báo proactive (khác stale deal — reactive).
+**Overdue task**: `nextActionDate` đến hạn mà chưa có Activity mới → cảnh báo proactive.
+Khác với stale deal (reactive, dựa vào `lastContactDate`).
 
-**Promote**: Thủ công, nhân viên tự quyết. Một false promote làm sai forecast cả team.
+**Promote**: Thủ công, nhân viên tự quyết qua PromoteModal. Một false promote làm sai forecast cả team.
 
 ---
 
@@ -70,19 +78,18 @@ Lead → Qualified → Proposal → Negotiation → Won
 
 | Pain Point | Nyxus giải quyết |
 |---|---|
-| Phải tạo Client riêng rồi mới tạo Lead | Tạo Lead → Client tự sinh (isProspect), kích hoạt khi qualify |
+| Phải tạo Client riêng rồi mới tạo Lead | `POST /api/leads` tạo đồng thời — `isProspect` xử lý lifecycle |
 | Không biết deal nào bị stuck | Reminders: overdue tasks + stale deals + expiring proposals |
-| nextAction chỉ là text, không ai nhớ | `nextActionDate` tạo task có due date, hiện cảnh báo Dashboard |
+| `nextAction` chỉ là text, không ai nhớ | `nextActionDate` → task có due date, cảnh báo proactive trên Dashboard |
 | Forecast không đáng tin | Confidence theo stage, fine-tune trong range — nhất quán toàn team |
-| Không biết tháng này close bao nhiêu | Forecast page với weighted revenue đáng tin |
-| Không có vết từ tiềm năng đến chốt | Activities timeline + statusHistory ghi nhận toàn hành trình |
+| Không biết tháng này close bao nhiêu | Forecast page với weighted revenue = `SUM(value × confidence/100)` |
+| Không có vết từ tiềm năng đến chốt | Activities timeline + `statusHistory` ghi nhận toàn hành trình |
 
 ---
 
-## 5. Non-Goals (scope v1)
+## 5. Non-Goals (v1)
 
-- Không tích hợp email/calendar
-- Không role-based access control
+- Không tích hợp email / calendar
 - Không real-time sync (JSON file làm backend)
 - Không mobile app (responsive web đủ dùng)
-- Không AI gợi ý confidence — stage default + fine-tune thủ công là đủ cho team nhỏ
+- Không AI gợi ý confidence — stage default + fine-tune thủ công đủ cho team nhỏ

@@ -58,7 +58,15 @@ export function OwnerFilter({ value, onChange }: OwnerFilterProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  if (!isManager || salespersons.length === 0) return null;
+  console.log('[OwnerFilter] render — isManager:', isManager, '| salespersons:', salespersons.map(u => u.id), '| value:', value);
+
+  if (!isManager) return null;
+  if (salespersons.length === 0) return (
+    <div className="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm border border-[#222] bg-[#111] text-[#333]">
+      <Users size={13} />
+      <span>Đang tải...</span>
+    </div>
+  );
 
   const selected = salespersons.find(u => u.id === value);
   const label    = selected ? selected.name : 'Tất cả sales';
@@ -80,7 +88,7 @@ export function OwnerFilter({ value, onChange }: OwnerFilterProps) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 min-w-[160px] rounded-xl border border-[#222] bg-[#111] py-1 shadow-xl">
+        <div className="absolute left-0 top-full mt-1 z-50 min-w-[180px] w-max rounded-xl border border-[#222] bg-[#111] py-1 shadow-xl">
           {/* Tất cả */}
           <button
             onClick={() => { onChange(''); setOpen(false); }}
@@ -103,11 +111,11 @@ export function OwnerFilter({ value, onChange }: OwnerFilterProps) {
                 value === u.id ? 'text-[#DFFF00]' : 'text-white'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-5 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[10px] font-bold text-[#DFFF00]">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-5 w-5 shrink-0 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[10px] font-bold text-[#DFFF00]">
                   {u.avatar.slice(0, 2).toUpperCase()}
                 </div>
-                <span>{u.name}</span>
+                <span className="whitespace-nowrap">{u.name}</span>
               </div>
               {value === u.id && <Check size={12} />}
             </button>

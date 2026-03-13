@@ -12,7 +12,7 @@ import { ALL_STATUSES, STATUS_LABELS, STATUS_STYLE, type SortKey, type SortDir }
 import { StatusBadge, Avatar, SortIcon } from '@/components/opportunities/OppUI';
 
 const FILTER_TABS: Array<OpportunityStatus | 'Tất cả'> = ['Tất cả', ...ALL_STATUSES];
-const thCls = 'px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-[#555] cursor-pointer select-none hover:text-[#888] transition-colors';
+const thCls = 'px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-[#555] cursor-pointer select-none hover:text-[#888] transition-colors'; // updated
 
 export default function OpportunitiesPage() {
   const { opportunities, fetchOpportunities, isLoading } = useOpportunityStore();
@@ -33,11 +33,18 @@ export default function OpportunitiesPage() {
   const [ownerFilter, setOwnerFilter]   = useState('');
 
   useEffect(() => {
+    console.log('[Opportunities] mount — isManager:', isManager, '| currentUser:', currentUser?.id);
     fetchOpportunities();
-    if (isManager) fetchUsers();
-  }, [fetchOpportunities, fetchUsers, isManager]);
+    fetchUsers();
+  }, [fetchOpportunities, fetchUsers]);
+
+  // Log khi ownerFilter thay đổi
+  useEffect(() => {
+    console.log('[Opportunities] ownerFilter changed →', ownerFilter || '(tất cả)');
+  }, [ownerFilter]);
 
   const filtered = useMemo(() => {
+    console.log('[Opportunities] filtered — visibleOpps:', visibleOpps.length, '| ownerFilter:', ownerFilter || '(tất cả)', '| activeFilter:', activeFilter);
     let list = ownerFilter ? visibleOpps.filter(o => o.ownerId === ownerFilter) : visibleOpps;
     if (activeFilter !== 'Tất cả') list = list.filter(o => o.status === activeFilter);
     if (search.trim()) {

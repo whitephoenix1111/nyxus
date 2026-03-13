@@ -31,8 +31,8 @@ export function relativeDate(iso: string): string {
   return `${Math.floor(diff / 365)} năm trước`;
 }
 
-export function groupByDate(acts: { date: string; [key: string]: unknown }[]): { label: string; items: typeof acts }[] {
-  const map = new Map<string, typeof acts>();
+export function groupByDate<T extends { date: string }>(acts: T[]): { label: string; items: T[] }[] {
+  const map = new Map<string, T[]>();
   acts.forEach(a => {
     const d = new Date(a.date);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;

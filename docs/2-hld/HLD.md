@@ -1,7 +1,8 @@
-# HLD.md — ĐÃ TÁCH
+# HLD — High-Level Design Overview
 
-File này đã được tách thành:
-- `HLD-1-architecture.md` — tech stack, domain model, data flow, routing, store, build status
-- `HLD-2-conventions.md` — coding conventions, design system, component architecture
+> Index tài liệu HLD. Đọc 2 file con theo thứ tự.
 
-Đọc 2 file trên thay thế file này.
+| File | Nội dung |
+|---|---|
+| `HLD-1-architecture.md` | Tech stack, domain model, data flow, routing, store architecture |
+| `HLD-2-conventions.md` | Coding conventions, design system tokens, auth & phân quyền chi tiết |

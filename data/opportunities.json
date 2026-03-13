@@ -33,10 +33,10 @@
     "company": "Pinnacle Enterprises",
     "avatar": "AM",
     "value": 41500,
-    "status": "Proposal",
+    "status": "Won",
     "date": "2025-03-18",
     "lastContactDate": "2025-03-10",
-    "confidence": 60,
+    "confidence": 100,
     "notes": ""
   },
   {
@@ -60,10 +60,10 @@
     "company": "Aurora Digital",
     "avatar": "CW",
     "value": 33800,
-    "status": "Proposal",
+    "status": "Won",
     "date": "2025-04-15",
     "lastContactDate": "2025-01-12",
-    "confidence": 60
+    "confidence": 100
   },
   {
     "id": "opp-007",
@@ -90,19 +90,6 @@
     "date": "2025-05-20",
     "lastContactDate": "2025-05-15",
     "confidence": 60
-  },
-  {
-    "id": "opp-009",
-    "ownerId": "usr-004",
-    "clientId": "cli-009",
-    "clientName": "Derek Stone",
-    "company": "Blueshift Media",
-    "avatar": "DS",
-    "value": 27300,
-    "status": "Lead",
-    "date": "2025-06-01",
-    "lastContactDate": "2024-12-28",
-    "confidence": 0
   },
   {
     "id": "opp-010",
@@ -246,19 +233,6 @@
     "date": "2025-11-07",
     "lastContactDate": "2025-07-01",
     "confidence": 35
-  },
-  {
-    "id": "opp-021",
-    "ownerId": "usr-003",
-    "clientId": "cli-021",
-    "clientName": "Victor Osei",
-    "company": "Goldstone Capital",
-    "avatar": "VO",
-    "value": 175000,
-    "status": "Won",
-    "date": "2025-11-15",
-    "lastContactDate": "2025-11-13",
-    "confidence": 100
   },
   {
     "id": "opp-023",

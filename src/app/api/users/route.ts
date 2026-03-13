@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server';
 import { readJSON } from '@/lib/json-db';
 import { getSession } from '@/lib/session';
-import type { UserRecord, User } from '@/types';
+import type { User, SessionUser } from '@/types';
 
 export async function GET(request: Request) {
   try {
@@ -17,9 +17,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const roleFilter = searchParams.get('role');
 
-    const records = await readJSON<UserRecord[]>('users.json');
+    // Đọc raw records từ DB (có passwordHash), strip trước khi trả về
+    const records = await readJSON<User[]>('users.json');
 
-    let users: User[] = records.map(({ passwordHash: _, ...u }) => u);
+    let users: SessionUser[] = records.map(({ passwordHash: _, ...u }) => u);
 
     if (roleFilter) {
       users = users.filter(u => u.role === roleFilter);

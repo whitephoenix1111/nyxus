@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 
-export default function LoginPage() {
+// Tách ra component riêng vì useSearchParams() yêu cầu Suspense boundary
+function LoginForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { setUser }  = useAuthStore();
@@ -45,6 +46,57 @@ export default function LoginPage() {
   };
 
   return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-[#888]">Email</label>
+        <input
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="sale@nyxus.vn"
+          required
+          className="rounded-xl border border-[#222] bg-[#111] px-4 py-2.5 text-sm text-white placeholder-[#444] outline-none transition-colors focus:border-[#DFFF00]/60"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-[#888]">Mật khẩu</label>
+        <input
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          placeholder="••••••••"
+          required
+          className="rounded-xl border border-[#222] bg-[#111] px-4 py-2.5 text-sm text-white placeholder-[#444] outline-none transition-colors focus:border-[#DFFF00]/60"
+        />
+      </div>
+
+      {error && (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="mt-1 flex items-center justify-center rounded-xl bg-[#DFFF00] px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-[#c8e600] disabled:opacity-50"
+      >
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+            Đang đăng nhập...
+          </span>
+        ) : 'Đăng nhập'}
+      </button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm">
 
@@ -68,53 +120,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#888]">Email</label>
-            <input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="sale@nyxus.vn"
-              required
-              className="rounded-xl border border-[#222] bg-[#111] px-4 py-2.5 text-sm text-white placeholder-[#444] outline-none transition-colors focus:border-[#DFFF00]/60"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-[#888]">Mật khẩu</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              className="rounded-xl border border-[#222] bg-[#111] px-4 py-2.5 text-sm text-white placeholder-[#444] outline-none transition-colors focus:border-[#DFFF00]/60"
-            />
-          </div>
-
-          {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-1 flex items-center justify-center rounded-xl bg-[#DFFF00] px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-[#c8e600] disabled:opacity-50"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-                Đang đăng nhập...
-              </span>
-            ) : 'Đăng nhập'}
-          </button>
-        </form>
+        {/* Form wrapped in Suspense — required by Next.js for useSearchParams */}
+        <Suspense fallback={<div className="h-40 rounded-xl bg-[#111] animate-pulse" />}>
+          <LoginForm />
+        </Suspense>
 
         {/* Dev hint */}
         <div className="mt-6 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-4">

@@ -77,7 +77,7 @@ export function IndustrySelect({ value, onChange, industries }: IndustrySelectPr
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-full rounded-xl py-1 shadow-2xl"
+        <div className="absolute left-0 top-[calc(100%+6px)] z-30 min-w-full w-max rounded-xl py-1 shadow-2xl"
           style={{ background: 'var(--color-neutral-100)', border: '1px solid var(--color-border-hover)' }}>
           <DropdownItem label="Tất cả ngành" active={value === ''} onClick={() => { onChange(''); setOpen(false); }} />
           <div className="my-1 h-px mx-2" style={{ background: 'var(--color-border)' }} />
@@ -99,7 +99,7 @@ function DropdownItem({ label, active, onClick }: { label: string; active: boole
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-surface-hover)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      <span>{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
       {active && <Check size={12} style={{ color: 'var(--color-brand)', flexShrink: 0 }} />}
     </button>
   );

@@ -4,12 +4,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { TrendingUp, X, UserCheck } from 'lucide-react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useActivityStore } from '@/store/useActivityStore';
-import { useClientStore, useClientsWithStats, useClientIndustries } from '@/store/useClientStore';
+import { useClientStore, useClientsWithComputedTags, useClientIndustries } from '@/store/useClientStore';
 import { formatCurrency } from '@/lib/utils';
 import type { Client } from '@/types';
 import { ClientCard } from '@/components/clients/ClientCard';
 import { DetailPanel } from '@/components/clients/DetailPanel';
-import { ClientFormModal } from '@/components/clients/ClientFormModal';
+import { ClientFormModal, type ClientFormData } from '@/components/clients/ClientFormModal';
 import { ExistingClientModal } from '@/components/clients/ExistingClientModal';
 import { SearchInput, IndustrySelect } from '@/components/clients/FilterBar';
 import { viIndustry } from '@/components/clients/_constants';
@@ -35,7 +35,7 @@ export default function ClientsPage() {
   const [ownerFilter, setOwnerFilter] = useState('');
 
   const industries = useClientIndustries();
-  const allClientsWithStats = useClientsWithStats(opportunities);
+  const allClientsWithStats = useClientsWithComputedTags(opportunities);
 
   // Sales chỉ thấy client của mình — Manager thấy tất cả
   const clientsWithStats = isManager
@@ -45,8 +45,8 @@ export default function ClientsPage() {
   useEffect(() => {
     fetchClients();
     fetchOpportunities();
-    if (isManager) fetchUsers();
-  }, [fetchClients, fetchOpportunities, fetchUsers, isManager]);
+    fetchUsers();
+  }, [fetchClients, fetchOpportunities, fetchUsers]);
 
   const selectedClient = useMemo(
     () => clientsWithStats.find(c => c.id === selectedClientId) ?? null,
@@ -64,7 +64,7 @@ export default function ClientsPage() {
     );
     if (industryFilter) list = list.filter(c => c.industry === industryFilter);
     return [...list].sort((a, b) => b.totalValue - a.totalValue);
-  }, [clientsWithStats, search, industryFilter]);
+  }, [clientsWithStats, ownerFilter, search, industryFilter]);
 
   const totalRevenue = useMemo(() => clientsWithStats.reduce((s, c) => s + c.totalValue, 0), [clientsWithStats]);
   const totalOpps    = useMemo(() => clientsWithStats.reduce((s, c) => s + c.opportunityCount, 0), [clientsWithStats]);
@@ -72,9 +72,14 @@ export default function ClientsPage() {
   // canEdit: chỉ dùng để hiện nút "Khách hàng hiện có" — salesperson mới tạo được
   const canCreate = currentUser?.role === 'salesperson';
 
-  async function handleSaveEdit(data: Omit<Client, 'id' | 'createdAt'>) {
+  async function handleSaveEdit(data: ClientFormData) {
     if (!editingClient) return;
-    await updateClient(editingClient.id, data);
+    // Giữ nguyên ownerId và isProspect từ client gốc — modal không quản lý 2 field này
+    await updateClient(editingClient.id, {
+      ...data,
+      ownerId:    editingClient.ownerId,
+      isProspect: editingClient.isProspect,
+    });
   }
 
   const hasFilter = search || industryFilter;

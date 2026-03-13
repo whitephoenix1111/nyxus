@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, X, CheckSquare, Clock, ListTodo, ChevronDown } from 'lucide-react';
+import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { useActivityStore } from '@/store/useActivityStore';
-import { useTaskStore, usePendingTasks, useOverdueTasks, useTasksForClients } from '@/store/useTaskStore';
 import { useClientStore } from '@/store/useClientStore';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
@@ -12,152 +11,15 @@ import { TYPE_CONFIG, OUTCOME_CONFIG, ALL_TYPES, ALL_OUTCOMES, groupByDate } fro
 import { ActivityCard } from '@/components/activities/ActivityCard';
 import { AddActivityModal } from '@/components/activities/AddActivityModal';
 import { KpiBar } from '@/components/activities/KpiBar';
-import { TaskCard } from '@/components/tasks/TaskCard';
-import { TaskModal } from '@/components/tasks/TaskModal';
-
-// ── Task Panel ────────────────────────────────────────────────────
-
-function TaskPanel({ ownerClientIds }: { ownerClientIds: Set<string> | null }) {
-  const { tasks, isLoading, fetchTasks, addTask, toggleDone, deleteTask } = useTaskStore();
-  const allPending  = usePendingTasks();
-  const allOverdue  = useOverdueTasks();
-  const fallbackIds = useMemo(() => new Set(tasks.map(t => t.clientId)), [tasks]);
-  const ownedTasks  = useTasksForClients(ownerClientIds ?? fallbackIds);
-
-  // null → Manager → thấy tất cả | Set → Sales → chỉ thấy task của client mình
-  const today   = new Date().toISOString().split('T')[0];
-  const pending = ownerClientIds
-    ? ownedTasks.filter(t => t.status === 'pending')
-    : allPending;
-  const overdue = ownerClientIds
-    ? ownedTasks.filter(t => t.status === 'pending' && t.dueDate && t.dueDate < today)
-    : allOverdue;
-  const [tab, setTab]           = useState<'pending' | 'done'>('pending');
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
-
-  const displayed = useMemo(() => {
-    if (tab === 'pending') {
-      // Overdue lên đầu, sau đó sort dueDate tăng dần
-      const today = new Date().toISOString().split('T')[0];
-      return [...pending].sort((a, b) => {
-        const aOv = a.dueDate && a.dueDate < today;
-        const bOv = b.dueDate && b.dueDate < today;
-        if (aOv && !bOv) return -1;
-        if (!aOv && bOv) return 1;
-        if (!a.dueDate && !b.dueDate) return 0;
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return a.dueDate.localeCompare(b.dueDate);
-      });
-    }
-    return tasks.filter(t => t.status === 'done')
-      .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''));
-  }, [tab, tasks, pending]);
-
-  return (
-    <div className="flex flex-col h-full"
-      style={{ borderLeft: '1px solid var(--color-border)' }}>
-
-      {/* Panel header */}
-      <div className="px-4 pt-4 pb-3 shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <CheckSquare size={14} style={{ color: 'var(--color-brand)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-              Tasks
-            </span>
-            {pending.length > 0 && (
-              <span className="rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums"
-                style={{
-                  background: overdue.length > 0 ? 'rgba(239,68,68,0.15)' : 'var(--color-brand-muted)',
-                  color:      overdue.length > 0 ? '#EF4444' : 'var(--color-brand)',
-                }}>
-                {pending.length}
-              </span>
-            )}
-          </div>
-          <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-1 text-xs rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
-            style={{ color: 'var(--color-brand)', border: '1px solid var(--color-brand-border)' }}>
-            <Plus size={11} /> Thêm
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 rounded-xl p-0.5"
-          style={{ background: 'var(--color-surface)' }}>
-          {(['pending', 'done'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-all"
-              style={{
-                background: tab === t ? 'var(--color-neutral-50)' : 'transparent',
-                color:      tab === t ? 'var(--color-text-primary)' : 'var(--color-text-faint)',
-              }}>
-              {t === 'pending'
-                ? <><Clock size={10} /> Chờ xử lý</>
-                : <><CheckSquare size={10} /> Hoàn thành</>}
-            </button>
-          ))}
-        </div>
-
-        {/* Overdue warning strip */}
-        {tab === 'pending' && overdue.length > 0 && (
-          <div className="mt-2 rounded-lg px-3 py-1.5 text-xs flex items-center gap-2"
-            style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <span className="font-semibold">{overdue.length}</span> task quá hạn
-          </div>
-        )}
-      </div>
-
-      {/* Task list */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {isLoading ? (
-          <div className="flex h-32 items-center justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2"
-              style={{ borderColor: 'var(--color-border)', borderTopColor: 'var(--color-brand)' }} />
-          </div>
-        ) : displayed.length === 0 ? (
-          <div className="flex flex-col h-32 items-center justify-center gap-2">
-            <ListTodo size={20} style={{ color: 'var(--color-text-disabled)' }} />
-            <p className="text-xs text-center" style={{ color: 'var(--color-text-faint)' }}>
-              {tab === 'pending' ? 'Không có task nào đang chờ' : 'Chưa hoàn thành task nào'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {displayed.map(task => (
-              <TaskCard key={task.id} task={task} onToggle={toggleDone} onDelete={deleteTask} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {showModal && (
-        <TaskModal
-          onClose={() => setShowModal(false)}
-          allowedClientIds={ownerClientIds ?? undefined}
-          onSave={async (data) => {
-            await addTask(data);
-            await fetchTasks();
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-// ── Main Page ─────────────────────────────────────────────────────
+import { TaskPanel } from '@/components/activities/TaskPanel';
 
 export default function ActivitiesPage() {
   const { activities, isLoading, fetchActivities, deleteActivity, addActivity } = useActivityStore();
-  const { clients, fetchClients }       = useClientStore();
-  const { fetchOpportunities } = useOpportunityStore();
+  const { clients, fetchClients }   = useClientStore();
+  const { fetchOpportunities }      = useOpportunityStore();
   const currentUser = useCurrentUser();
   const isManager   = useIsManager();
 
-  // Set clientId mà current user sở hữu — null nếu là Manager
   const ownerClientIds = useMemo(() => {
     if (isManager) return null;
     return new Set(clients.filter(c => c.ownerId === currentUser?.id).map(c => c.id));
@@ -177,7 +39,6 @@ export default function ActivitiesPage() {
     fetchOpportunities();
   }, [fetchActivities, fetchClients, fetchOpportunities]);
 
-  // Filter activities theo owner
   const visibleActivities = useMemo(() => {
     if (!ownerClientIds) return activities;
     return activities.filter(a => ownerClientIds.has(a.clientId));
@@ -203,7 +64,7 @@ export default function ActivitiesPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
 
-      {/* ── Mobile tab switcher ── */}
+      {/* Mobile tab switcher */}
       <div className="md:hidden flex items-center gap-1 px-4 pt-3 pb-0 shrink-0">
         {(['activities', 'tasks'] as const).map(t => (
           <button key={t} onClick={() => setMobileTab(t)}
@@ -217,7 +78,6 @@ export default function ActivitiesPage() {
         ))}
       </div>
 
-      {/* ── Desktop: 2-col / Mobile: single pane ── */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left: Activity timeline */}
@@ -241,7 +101,6 @@ export default function ActivitiesPage() {
 
           {/* Filters */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-
             {/* Search */}
             <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-xs rounded-xl px-3 py-2"
               style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
@@ -393,7 +252,7 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Right: Task panel (~35%) */}
+        {/* Right: Task panel */}
         <div className={`w-full md:w-[340px] lg:w-[380px] shrink-0 overflow-hidden
           ${mobileTab === 'activities' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
           <TaskPanel ownerClientIds={ownerClientIds} />

@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { readJSON } from '@/lib/json-db';
 import { signToken, comparePassword, SESSION_COOKIE } from '@/lib/auth';
-import type { UserRecord, SessionUser } from '@/types';
+import type { User, SessionUser } from '@/types';
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Thiếu email hoặc mật khẩu' }, { status: 400 });
     }
 
-    const users = await readJSON<UserRecord[]>('users.json');
+    const users = await readJSON<User[]>('users.json');
     const user = users.find((u) => u.email === email.toLowerCase().trim());
 
     if (!user || !comparePassword(password, user.passwordHash)) {

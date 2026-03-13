@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
 import { requireRole } from '@/lib/session';
-import type { Client, Opportunity, UserRecord } from '@/types';
+import type { Client, Opportunity, User } from '@/types';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,7 +22,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // Xác nhận user mới tồn tại và là salesperson
-    const users = await readJSON<UserRecord[]>('users.json');
+    const users = await readJSON<User[]>('users.json');
     const newOwner = users.find(u => u.id === newOwnerId);
     if (!newOwner) {
       return NextResponse.json({ error: 'User không tồn tại' }, { status: 404 });

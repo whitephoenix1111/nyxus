@@ -12,7 +12,7 @@ import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
 export async function POST(request: Request) {
   try {
-    await requireRole(['salesperson']);
+    const session = await requireRole(['salesperson']);
     const body = await request.json();
     const {
       name,
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     // Client đã Won — isProspect: false ngay từ đầu
     const newClient: Client = {
       id:         clientId,
+      ownerId:    session.id,
       name,
       company,
       avatar,
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
     // Opportunity Won — confidence cố định 100%, không qua pipeline
     const newOpportunity: Opportunity = {
       id:              oppId,
+      ownerId:         session.id,
       clientId,
       clientName:      name,
       company,

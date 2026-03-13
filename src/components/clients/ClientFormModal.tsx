@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { X, Plus, UserPlus, Pencil } from 'lucide-react';
-import type { Client, ClientTag } from '@/types';
+import type { Client, ClientTag, ClientFormData } from '@/types';
 import { Avatar, Field } from './_atoms';
-import { ALL_TAGS, TAG_STYLE, INDUSTRIES, viIndustry, getInitials } from './_constants';
+import { ALL_TAGS, TAG_STYLE, TAG_LABELS, INDUSTRIES, viIndustry, getInitials } from './_constants';
+
+export type { ClientFormData };
 
 type FormState = {
   name: string; company: string; email: string; phone: string;
@@ -30,7 +32,7 @@ export interface ClientFormModalProps {
   mode: 'add' | 'edit';
   initialData?: Client;
   onClose: () => void;
-  onSave: (data: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  onSave: (data: ClientFormData) => Promise<void>;
 }
 
 export function ClientFormModal({ mode, initialData, onClose, onSave }: ClientFormModalProps) {
@@ -181,7 +183,7 @@ export function ClientFormModal({ mode, initialData, onClose, onSave }: ClientFo
                         opacity: active ? 1 : 0.7,
                       }}>
                       {active && <span className="mr-1">✓</span>}
-                      {tag}
+                      {TAG_LABELS[tag]}
                     </button>
                   );
                 })}

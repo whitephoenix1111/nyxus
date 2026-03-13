@@ -1,18 +1,20 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, X, Activity, ChevronDown, Search, CheckSquare, CalendarClock, User } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, X, Activity, CheckSquare, CalendarClock, User } from 'lucide-react';
 import type { Activity as ActivityType, ActivityType as AType, ActivityOutcome } from '@/types';
-import { useClientStore } from '@/store/useClientStore';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { TYPE_CONFIG, OUTCOME_CONFIG, ALL_TYPES, ALL_OUTCOMES } from './constants';
+import { ClientCombobox } from './ClientCombobox';
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs uppercase tracking-widest"
-        style={{ color: error ? 'var(--color-danger)' : 'var(--color-text-faint)' }}>
+      <label
+        className="text-xs uppercase tracking-widest"
+        style={{ color: error ? 'var(--color-danger)' : 'var(--color-text-faint)' }}
+      >
         {label}
       </label>
       {children}
@@ -20,106 +22,6 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     </div>
   );
 }
-
-// ── Client Combobox ───────────────────────────────────────────────
-
-interface ClientComboboxProps {
-  value: string;
-  onChange: (clientId: string, clientName: string, company: string) => void;
-  error?: string;
-}
-
-function ClientCombobox({ value, onChange, error }: ClientComboboxProps) {
-  const clients  = useClientStore(s => s.clients);
-  const [query,   setQuery]   = useState('');
-  const [open,    setOpen]    = useState(false);
-  const containerRef          = useRef<HTMLDivElement>(null);
-
-  const selected = clients.find(c => c.id === value);
-
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return clients.slice(0, 10);
-    return clients
-      .filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.company.toLowerCase().includes(q)
-      )
-      .slice(0, 10);
-  }, [clients, query]);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery('');
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => { setOpen(o => !o); setQuery(''); }}
-        className="input-base w-full flex items-center justify-between gap-2 text-left"
-        style={{ color: selected ? 'var(--color-text-primary)' : 'var(--color-text-disabled)',
-                 borderColor: error ? 'var(--color-danger)' : undefined }}>
-        <span className="truncate text-sm">
-          {selected ? `${selected.name} — ${selected.company}` : 'Chọn khách hàng...'}
-        </span>
-        <ChevronDown size={13} style={{ flexShrink: 0, color: 'var(--color-text-faint)' }} />
-      </button>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl shadow-xl overflow-hidden"
-          style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
-          <div className="flex items-center gap-2 px-3 py-2"
-            style={{ borderBottom: '1px solid var(--color-border)' }}>
-            <Search size={12} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
-            <input
-              autoFocus
-              className="flex-1 bg-transparent text-sm outline-none"
-              style={{ color: 'var(--color-text-primary)' }}
-              placeholder="Tìm tên hoặc công ty..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <p className="px-3 py-3 text-xs text-center" style={{ color: 'var(--color-text-faint)' }}>
-                Không tìm thấy khách hàng
-              </p>
-            ) : filtered.map(c => (
-              <button key={c.id} type="button"
-                onClick={() => { onChange(c.id, c.name, c.company); setOpen(false); setQuery(''); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/5"
-                style={{ background: c.id === value ? 'var(--color-brand-muted)' : undefined }}>
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
-                  style={{ background: 'var(--color-surface)', color: 'var(--color-brand)' }}>
-                  {c.avatar || c.name[0]}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
-                    {c.name}
-                  </p>
-                  <p className="text-xs truncate" style={{ color: 'var(--color-text-faint)' }}>
-                    {c.company}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Types ─────────────────────────────────────────────────────────
 
 const EMPTY_FORM = {
   type:           'call' as AType,
@@ -141,25 +43,21 @@ const EMPTY_TASK = {
   assignedTo: '',
 };
 
-// ── Main Modal ────────────────────────────────────────────────────
-
 export function AddActivityModal({ onClose, onSave }: {
   onClose: () => void;
   onSave: (data: Omit<ActivityType, 'id' | 'createdAt'>) => Promise<ActivityType | null>;
 }) {
-  const opportunities        = useOpportunityStore(s => s.opportunities);
-  const { addTask }          = useTaskStore();
+  const opportunities = useOpportunityStore(s => s.opportunities);
+  const { addTask }   = useTaskStore();
 
-  const [form,     setForm]     = useState(EMPTY_FORM);
-  const [saving,   setSaving]   = useState(false);
-  const [errors,   setErrors]   = useState<Partial<Record<string, string>>>({});
-
-  // Step 2 state
-  const [step,        setStep]        = useState<1 | 2>(1);
-  const [savedActId,  setSavedActId]  = useState('');      // activityId để set createdFrom
-  const [taskForm,    setTaskForm]    = useState(EMPTY_TASK);
-  const [taskSaving,  setTaskSaving]  = useState(false);
-  const [taskError,   setTaskError]   = useState('');
+  const [form,       setForm]       = useState(EMPTY_FORM);
+  const [saving,     setSaving]     = useState(false);
+  const [errors,     setErrors]     = useState<Partial<Record<string, string>>>({});
+  const [step,       setStep]       = useState<1 | 2>(1);
+  const [savedActId, setSavedActId] = useState('');
+  const [taskForm,   setTaskForm]   = useState(EMPTY_TASK);
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [taskError,  setTaskError]  = useState('');
 
   const clientOpps = useMemo(() =>
     form.clientId
@@ -186,11 +84,9 @@ export function AddActivityModal({ onClose, onSave }: {
     return Object.keys(e).length === 0;
   }
 
-  // ── Step 1: Submit activity ──
   async function handleSubmitActivity() {
     if (!validate()) return;
     setSaving(true);
-
     const saved = await onSave({
       type:           form.type,
       title:          form.title.trim(),
@@ -204,26 +100,17 @@ export function AddActivityModal({ onClose, onSave }: {
       nextActionDate: form.nextActionDate || undefined,
       notes:          form.notes.trim(),
     });
-
     setSaving(false);
-
-    if (!saved) return; // lỗi, ở lại step 1
-
-    // Nếu có nextAction → bước sang step 2
+    if (!saved) return;
     if (form.nextAction.trim()) {
       setSavedActId(saved.id);
-      setTaskForm({
-        title:      form.nextAction.trim(),
-        dueDate:    form.nextActionDate,
-        assignedTo: '',
-      });
+      setTaskForm({ title: form.nextAction.trim(), dueDate: form.nextActionDate, assignedTo: '' });
       setStep(2);
     } else {
       onClose();
     }
   }
 
-  // ── Step 2: Tạo task và đóng ──
   async function handleCreateTask() {
     if (!taskForm.title.trim()) { setTaskError('Tiêu đề task không được để trống'); return; }
     setTaskSaving(true);
@@ -252,7 +139,7 @@ export function AddActivityModal({ onClose, onSave }: {
         <div className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
 
-          {/* ── Header ── */}
+          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 shrink-0"
             style={{ borderBottom: '1px solid var(--color-border)' }}>
             <div className="flex items-center gap-3">
@@ -270,9 +157,7 @@ export function AddActivityModal({ onClose, onSave }: {
                   {isStep2 ? 'Xác nhận task follow-up' : 'Thêm hoạt động mới'}
                 </h2>
                 <p className="text-xs" style={{ color: 'var(--color-text-faint)' }}>
-                  {isStep2
-                    ? 'Bước 2 / 2 — Kiểm tra và tạo task'
-                    : 'Ghi lại tương tác với khách hàng'}
+                  {isStep2 ? 'Bước 2 / 2 — Kiểm tra và tạo task' : 'Ghi lại tương tác với khách hàng'}
                 </p>
               </div>
             </div>
@@ -284,20 +169,16 @@ export function AddActivityModal({ onClose, onSave }: {
             )}
           </div>
 
-          {/* ── Body: Step 1 ── */}
+          {/* Body: Step 1 */}
           {!isStep2 && (
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-
-              {/* Type selector */}
               <div>
                 <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-faint)' }}>
                   Loại hoạt động
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   {ALL_TYPES.map(t => {
-                    const c = TYPE_CONFIG[t];
-                    const Icon = c.icon;
-                    const active = form.type === t;
+                    const c = TYPE_CONFIG[t]; const Icon = c.icon; const active = form.type === t;
                     return (
                       <button key={t} onClick={() => setField('type', t)}
                         className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all"
@@ -319,17 +200,12 @@ export function AddActivityModal({ onClose, onSave }: {
               </Field>
 
               <Field label="Khách hàng *" error={errors.clientId}>
-                <ClientCombobox
-                  value={form.clientId}
-                  onChange={handleClientChange}
-                  error={errors.clientId}
-                />
+                <ClientCombobox value={form.clientId} onChange={handleClientChange} error={errors.clientId} />
               </Field>
 
               {form.clientId && (
                 <Field label="Cơ hội (tuỳ chọn)">
-                  <select className="select-base w-full"
-                    value={form.opportunityId}
+                  <select className="select-base w-full" value={form.opportunityId}
                     onChange={e => setField('opportunityId', e.target.value)}>
                     <option value="">— Không gắn cơ hội —</option>
                     {clientOpps.map(o => (
@@ -387,15 +263,12 @@ export function AddActivityModal({ onClose, onSave }: {
                   placeholder="Diễn biến, thông tin quan trọng, điểm cần lưu ý..."
                   value={form.notes} onChange={e => setField('notes', e.target.value)} />
               </Field>
-
             </div>
           )}
 
-          {/* ── Body: Step 2 ── */}
+          {/* Body: Step 2 */}
           {isStep2 && (
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-
-              {/* Banner */}
               <div className="rounded-xl px-4 py-3 flex items-start gap-3"
                 style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
                 <CheckSquare size={15} style={{ color: '#22C55E', marginTop: 1, flexShrink: 0 }} />
@@ -409,55 +282,41 @@ export function AddActivityModal({ onClose, onSave }: {
                 </div>
               </div>
 
-              {/* Task title */}
               <Field label="Nội dung task *" error={taskError}>
                 <input
                   className="input-base w-full"
                   placeholder="Mô tả việc cần làm..."
                   value={taskForm.title}
                   autoFocus
-                  onChange={e => {
-                    setTaskForm(f => ({ ...f, title: e.target.value }));
-                    if (taskError) setTaskError('');
-                  }}
+                  onChange={e => { setTaskForm(f => ({ ...f, title: e.target.value })); if (taskError) setTaskError(''); }}
                 />
               </Field>
 
-              {/* Due date */}
               <Field label="Ngày đến hạn">
                 <div className="relative">
                   <CalendarClock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                     style={{ color: 'var(--color-text-faint)' }} />
-                  <input
-                    className="input-base w-full pl-8"
-                    type="date"
+                  <input className="input-base w-full pl-8" type="date"
                     value={taskForm.dueDate}
-                    onChange={e => setTaskForm(f => ({ ...f, dueDate: e.target.value }))}
-                  />
+                    onChange={e => setTaskForm(f => ({ ...f, dueDate: e.target.value }))} />
                 </div>
               </Field>
 
-              {/* Assigned to */}
               <Field label="Giao cho">
                 <div className="relative">
                   <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                     style={{ color: 'var(--color-text-faint)' }} />
-                  <input
-                    className="input-base w-full pl-8"
-                    placeholder="Tên người thực hiện..."
+                  <input className="input-base w-full pl-8" placeholder="Tên người thực hiện..."
                     value={taskForm.assignedTo}
-                    onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))}
-                  />
+                    onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))} />
                 </div>
               </Field>
-
             </div>
           )}
 
-          {/* ── Footer ── */}
+          {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
             style={{ borderTop: '1px solid var(--color-border)' }}>
-
             {!isStep2 ? (
               <>
                 <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Hủy</button>
@@ -471,10 +330,7 @@ export function AddActivityModal({ onClose, onSave }: {
               </>
             ) : (
               <>
-                <button onClick={onClose}
-                  className="btn-ghost text-sm px-4 py-2">
-                  Bỏ qua
-                </button>
+                <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Bỏ qua</button>
                 <button onClick={handleCreateTask} disabled={taskSaving}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
                   style={{ background: '#22C55E', color: '#000' }}>

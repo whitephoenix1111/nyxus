@@ -66,6 +66,9 @@ export interface Client {
   archivedAt?: string;           // ISO date — soft delete, ẩn khỏi UI nhưng giữ lịch sử
 }
 
+// Fields do form quản lý — ownerId và isProspect do caller/API inject
+export type ClientFormData = Omit<Client, 'id' | 'createdAt' | 'ownerId' | 'isProspect'>;
+
 // Derived type — computed bằng cách join Client + Opportunities qua clientId
 export interface ClientWithStats extends Client {
   totalValue: number;
@@ -118,7 +121,6 @@ export interface Task {
 }
 
 // ── Auth ────────────────────────────────────────────────────────
-
 export type UserRole = 'salesperson' | 'manager';
 
 export interface User {
@@ -126,21 +128,35 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatar: string;           // 2-char initials, e.g. "NA"
-}
-
-// Stored in users.json (includes passwordHash — never expose to client)
-export interface UserRecord extends User {
+  avatar: string;
   passwordHash: string;
 }
 
-// Payload signed into JWT — minimal, no sensitive data
 export interface SessionUser {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   avatar: string;
+}
+
+export type DocType     = 'pdf' | 'doc' | 'xls' | 'img' | 'other';
+export type DocCategory = 'Hợp đồng' | 'Đề xuất' | 'Báo cáo' | 'Hoá đơn';
+
+export interface Document {
+  id: string;
+  ownerId: string;          // FK → User.id
+  clientId: string;         // FK → Client.id
+  clientName: string;       // denormalized
+  company: string;          // denormalized
+  opportunityId?: string;   // FK → Opportunity.id (optional)
+  name: string;
+  type: DocType;
+  category: DocCategory;
+  size: string;             // e.g. "2.4 MB" — display only
+  url: string | null;       // null = metadata only, no real file
+  starred: boolean;
+  uploadedAt: string;       // ISO 8601
 }
 
 // ── Misc ──────────────────────────────────────────────────────────

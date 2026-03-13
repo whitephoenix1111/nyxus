@@ -15,12 +15,15 @@ export const useUsersStore = create<UsersStore>((set) => ({
   isLoading: false,
 
   fetchUsers: async () => {
+    console.log('[useUsersStore] fetchUsers start');
     set({ isLoading: true });
     try {
       const res = await fetch('/api/users');
       const data: User[] = await res.json();
+      console.log('[useUsersStore] fetchUsers done —', data.length, 'users:', data.map(u => `${u.id}(${u.role})`));
       set({ users: data, isLoading: false });
-    } catch {
+    } catch (err) {
+      console.error('[useUsersStore] fetchUsers error:', err);
       set({ isLoading: false });
     }
   },

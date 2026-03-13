@@ -1,9 +1,11 @@
 import { ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { ClientWithStats } from '@/types';
-import { Avatar, TagBadge } from './_atoms';
+import { Avatar } from './_atoms';
+import { TagBadge } from '@/components/ui/TagBadge';
 import { OwnerBadge } from '@/components/ui/OwnerBadge';
 import { useIsManager } from '@/store/useAuthStore';
+import { MANUAL_TAGS } from './_constants';
 
 interface ClientCardProps {
   client: ClientWithStats;
@@ -55,7 +57,13 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
 
       {client.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {client.tags.slice(0, 3).map(tag => <TagBadge key={tag} tag={tag} />)}
+          {client.tags.slice(0, 3).map(tag => (
+            <TagBadge
+              key={tag}
+              tag={tag}
+              isComputed={!MANUAL_TAGS.includes(tag)}
+            />
+          ))}
         </div>
       )}
 
