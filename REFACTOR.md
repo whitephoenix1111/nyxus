@@ -1,16 +1,3 @@
-# Nyxus CRM — Kiến trúc tổng quan
-
-## Prompt khởi động cho new chat
-
-```
-Tôi đang dùng claude desktop
-Đọc toàn bộ D:\nyxus\REFACTOR.md trước khi làm bất cứ việc gì.
-File này chứa kiến trúc và workflow của toàn hệ thống.
-Chỉ đọc mỗi file này thôi, chưa cần đụng chạm gì thì đừng làm gì quá nhiều.
-```
-
----
-
 ## Stack
 
 **Next.js App Router · JSON file DB · Zustand stores**
