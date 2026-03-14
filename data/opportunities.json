@@ -270,5 +270,47 @@
     "date": "2026-03-14",
     "notes": "Hhaha 458",
     "statusHistory": []
+  },
+  {
+    "id": "opp-dd6cad30",
+    "ownerId": "usr-004",
+    "clientId": "cli-119b109b",
+    "title": "GÓI MASSAGE",
+    "value": 23558,
+    "status": "Won",
+    "confidence": 100,
+    "date": "2026-03-14",
+    "notes": "hả ?",
+    "statusHistory": [
+      {
+        "from": "Lead",
+        "to": "Won",
+        "date": "2026-03-14"
+      }
+    ]
+  },
+  {
+    "id": "opp-4394c330",
+    "ownerId": "usr-002",
+    "clientId": "cli-003",
+    "title": "GÓI HAI CHỊU EMS",
+    "value": 235,
+    "status": "Lead",
+    "confidence": 15,
+    "date": "2026-03-14",
+    "notes": "fffff7777",
+    "statusHistory": []
+  },
+  {
+    "id": "opp-14bdff03",
+    "ownerId": "usr-001",
+    "clientId": "cli-001",
+    "title": "JUY IU",
+    "value": 353,
+    "status": "Lead",
+    "confidence": 15,
+    "date": "2026-03-14",
+    "notes": "1111",
+    "statusHistory": []
   }
 ]

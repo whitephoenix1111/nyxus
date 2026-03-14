@@ -212,10 +212,11 @@ export default function DocumentsPage() {
         )}
       </div>
 
-      {/* Modal upload — toast.success đặt ở onClose (sau khi modal đóng) thay vì onSave
-          để tránh toast xuất hiện trong lúc modal vẫn đang hiển thị animation đóng */}
+      {/* Toast nằm trong UploadDocModal.handleSubmit — không đặt ở onClose để tránh fire khi chỉ thoát */}
       {showModal && (
-        <UploadDocModal onClose={() => { setShowModal(false); toast.success('Đã thêm tài liệu'); }} />
+        <UploadDocModal
+          onClose={() => setShowModal(false)}
+        />
       )}
 
       {/* Confirm xoá — hard delete, không thể undo, nên dùng variant="danger" */}

@@ -1,7 +1,8 @@
 // src/app/clients/page.tsx — Trang danh sách khách hàng
 //
-// Chỉ hiển thị client KHÔNG có opp active (status = 'won' | 'no-deal').
-// Client có ≥1 opp active thuộc về /leads — không hiển thị ở đây.
+// Hiển thị client có ít nhất 1 opp Won — kể cả khi đang có opp active.
+// Nghĩa là client có thể xuất hiện đồng thời ở /clients lẫn /leads.
+// Client chỉ có Lost / no-deal → không hiện ở đây.
 // Sales thấy client của mình; Manager thấy tất cả và có thêm OwnerFilter.
 
 'use client';
@@ -82,20 +83,16 @@ export default function ClientsPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
 
-    // showArchived: hiển archived clients — lấy từ archivedClients (raw store)
-    // Mặc định: chỉ hiện active clients không có opp đang mở.
     let list = showArchived
       ? (ownerFilter ? archivedClients.filter(c => c.ownerId === ownerFilter) : archivedClients)
       : (() => {
           const active = ownerFilter ? ownedClients.filter(c => c.ownerId === ownerFilter) : ownedClients;
-          // Chỉ hiện client đã có ít nhất 1 opp Won và không có opp đang active.
-          // Client chỉ có Lost / no-deal → không hiện ở đây (chưa chốt được đọn nào).
-          // Client có opp đang chạy → thuộc /leads.
+          // Hiện client có ít nhất 1 opp Won — kể cả khi đang có opp active.
+          // Client đang có deal mới (lead/negotiation/...) + đã từng Won vẫn hiện ở đây.
+          // Client chỉ có Lost / no-deal → không hiện.
           return active.filter(c => {
             const clientOpps = opportunities.filter(o => o.clientId === c.id);
-            const hasWon    = clientOpps.some(o => o.status === 'Won');
-            const hasActive = clientOpps.some(o => o.status !== 'Won' && o.status !== 'Lost');
-            return hasWon && !hasActive;
+            return clientOpps.some(o => o.status === 'Won');
           });
         })();
 

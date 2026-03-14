@@ -114,7 +114,7 @@ export function DetailPanelDocs({ clientId, clientName, company }: DetailPanelDo
 
       {showUpload && (
         <UploadDocModal
-          onClose={() => { setShowUpload(false); toast.success('Đã thêm tài liệu'); }}
+          onClose={() => setShowUpload(false)}
           prefillClientId={clientId}
           prefillClientName={clientName}
           prefillCompany={company}

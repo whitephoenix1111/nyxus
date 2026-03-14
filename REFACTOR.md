@@ -103,10 +103,13 @@ users.json
 | `archivedAt?` | ISO date | Soft delete — ẩn khỏi UI, giữ trong DB |
 
 > `isProspect` **đã bị xóa**. Trạng thái client suy ra từ opportunities:
+> - Client có ≥1 opp Won → hiện ở `/clients` (kể cả khi đang có opp active)
 > - Client có ≥1 opp active (không phải Won/Lost) → hiện ở `/leads`
-> - Client có ≥1 Won VÀ không còn opp active → hiện ở `/clients`
 > - Client chỉ có Lost / không có opp → không hiện ở đâu
 > - Client có `archivedAt` → hiện ở tab "Đã lưu trữ" trong `/clients`
+>
+> **Lưu ý:** `/clients` và `/leads` KHÔNG mutually exclusive — client có Won + đang có deal mới
+> sẽ xuất hiện ở cả hai trang cùng lúc.
 
 ### Opportunity
 
@@ -222,7 +225,7 @@ Callers: `useClientsWithComputedTags(opps, activities)` · `useLeadsPage.clientT
 |-------|------------|--------------|---------|
 | `/leads` | opp active & `ownerId === me` | Tất cả | Không dùng `isProspect` |
 | `/opportunities` | `ownerId === me` | Tất cả | Read-only |
-| `/clients` | `ownerId === me` & có ≥1 Won & không có opp active | Tất cả | Xem thêm: Logic hiển thị clients |
+| `/clients` | `ownerId === me` & có ≥1 Won | Tất cả | Xem thêm: Logic hiển thị clients |
 | `/activities` | client có `ownerId === me` | Tất cả | |
 | `/documents` | client có `ownerId === me` | Tất cả | |
 | `/forecast` | ❌ redirect `/` | ✅ | Manager-only |
@@ -234,14 +237,17 @@ Callers: `useClientsWithComputedTags(opps, activities)` · `useLeadsPage.clientT
 ### Quy tắc phân loại client theo opp status
 
 ```
+Client có ≥1 opp Won
+  → hiện ở /clients (kể cả khi đang có opp active)
+
 Client có ≥1 opp active (Lead/Qualified/Proposal/Negotiation)
   → hiện ở /leads (tab "Đang theo dõi")
 
-Client có ≥1 Won VÀ không còn opp active
-  → hiện ở /clients
+⚠️  /clients và /leads KHÔNG mutually exclusive:
+    client có Won + đang có deal mới → xuất hiện ở CẢ HAI trang
 
 Client chỉ có Lost hoặc không có opp nào
-  → không hiện ở đâu cả (chưa chốt được đọn nào)
+  → không hiện ở đâu cả (chưa chốt được deal nào)
 
 Client có archivedAt (soft-deleted)
   → hiện ở tab "Đã lưu trữ" trong /clients (toggle button)
@@ -324,6 +330,7 @@ POST /api/leads
 AddDealModal (từ ClientDetail — tab "Cơ hội")
   → POST /api/opportunities  { clientId, title, value, status, confidence }
   → ownerId copy từ client.ownerId tại API layer
+  → Nếu client đã có Won: client vẫn giữ nguyên ở /clients, đồng thời hiện thêm ở /leads
 ```
 
 ### Thăng stage
@@ -453,7 +460,7 @@ src/components/clients/
                           Khi client.archivedAt: hiện nút "Mở lại" (xanh), ẩn nút "Xóa"
   ClientFormModal.tsx   — Edit client, KHÔNG tạo lead
   ExistingClientModal.tsx
-  AddDealModal.tsx      — Thêm deal N cho client đã tồn tại (chưa tạo)
+  AddDealModal.tsx      — Thêm deal mới cho client đã tồn tại
 
 src/components/leads/
   LeadCard.tsx          — Props: opp, clientName, clientCompany, clientAvatar, lastContact
@@ -488,15 +495,6 @@ Field "Giao cho" ẩn với **salesperson** ở mọi nơi tạo task:
 Lý do: sales chỉ thấy client của mình, task luôn thuộc về họ.
 Giao cho người khác không có tác dụng vì UI filter theo `client.ownerId`, không theo `task.assignedTo`.
 API xử lý phần còn lại: salesperson → `assignedTo = session.id` tự động.
-
----
-
-## Việc còn lại (backlog)
-
-### 🟡 Feature mới chưa làm
-
-- `AddDealModal` — component chưa tạo (chỉ có spec trong REFACTOR.md)
-- `DetailPanel` tab "Cơ hội": nút "Thêm deal" mở `AddDealModal`
 
 ---
 
