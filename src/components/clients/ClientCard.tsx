@@ -11,17 +11,12 @@ interface ClientCardProps {
   client: ClientWithStats;
   onClick: () => void;
   archived?: boolean;
+  lastContact?: string;   // ISO date — tính từ MAX(activities.date) ở caller, không còn trên Opportunity
 }
 
-export function ClientCard({ client, onClick, archived = false }: ClientCardProps) {
+export function ClientCard({ client, onClick, archived = false, lastContact }: ClientCardProps) {
   const isManager = useIsManager();
   const orderCount = client.opportunities.filter(o => o.status === 'Won').length;
-
-  const lastContact = client.opportunities
-    .map(o => o.lastContactDate)
-    .filter(Boolean)
-    .sort()
-    .at(-1);
 
   const lastContactLabel = lastContact
     ? new Date(lastContact).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -97,7 +92,8 @@ export function ClientCard({ client, onClick, archived = false }: ClientCardProp
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>Liên hệ cuối</span>
         <div className="flex items-center gap-2">
-          {isManager && <OwnerBadge ownerId={client.ownerId} />}
+          {/* size="md" hiện avatar + tên sales đầy đủ thay vì chỉ avatar */}
+          {isManager && <OwnerBadge ownerId={client.ownerId} size="md" />}
           <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-subtle)' }}>{lastContactLabel}</span>
         </div>
       </div>

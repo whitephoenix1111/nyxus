@@ -48,8 +48,11 @@ export default function TeamLeaderboard({ opportunities, tasks }: TeamLeaderboar
         .filter(o => !['Won', 'Lost'].includes(o.status))
         .reduce((s, o) => s + o.value, 0);
 
+      // lastContactDate đã xóa khỏi schema — dùng o.date (ngày deal) để filter Won tháng này.
+      // statusHistory có thể chính xác hơn nhưng optional và có thể rỗng,
+      // o.date luôn có và đủ dùng cho mục đích leaderboard tháng.
       const wonThisMonth = myOpps.filter(
-        o => o.status === 'Won' && o.lastContactDate >= monthStart
+        o => o.status === 'Won' && o.date >= monthStart
       );
 
       const overdueCount = tasks.filter(t =>

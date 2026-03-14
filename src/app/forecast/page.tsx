@@ -8,6 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { TrendingUp, Target, DollarSign, BarChart3, AlertTriangle } from 'lucide-react';
 import { useOpportunityStore, useForecastRevenue, useStatsByStatus } from '@/store/useOpportunityStore';
 import { useClientStore } from '@/store/useClientStore';
+import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
 import type { OpportunityStatus } from '@/types';
 import { fmt } from '@/components/forecast/constants';
 import { KpiCard, FunnelBar, OppRow, ConfidenceTiers } from '@/components/forecast/ForecastUI';
@@ -17,14 +18,38 @@ const FUNNEL_STAGES: OpportunityStatus[] = ['Lead', 'Qualified', 'Proposal', 'Ne
 
 export default function ForecastPage() {
   // ── Store ─────────────────────────────────────────────────────────────────
-  const { opportunities, fetchOpportunities, isLoading } = useOpportunityStore();
+  const { opportunities: allOpportunities, fetchOpportunities, isLoading } = useOpportunityStore();
   const { clients } = useClientStore();
+  const currentUser = useCurrentUser();
+  const isManager   = useIsManager();
+
+  // Sales chỉ thấy pipeline của mình — manager thấy toàn bộ
+  const opportunities = useMemo(
+    () => isManager
+      ? allOpportunities
+      : allOpportunities.filter(o => o.ownerId === currentUser?.id),
+    [allOpportunities, isManager, currentUser?.id]
+  );
 
   // forecastRevenue = Σ(value × confidence%) — loại Lost (confidence=0%), giữ Won (confidence=100%)
-  const forecastRevenue = useForecastRevenue();
+  // Selector đọc từ store (toàn bộ), nên tính lại thủ công từ opportunities đã filter
+  const forecastRevenue = useMemo(
+    () => opportunities
+      .filter(o => o.status !== 'Lost')
+      .reduce((s, o) => s + o.value * (o.confidence / 100), 0),
+    [opportunities]
+  );
 
-  // counts & values theo từng stage — dùng cho tab count trong FunnelBar
-  const { counts, values } = useStatsByStatus();
+  // counts & values theo từng stage — tính từ opportunities đã filter
+  const { counts, values } = useMemo(() => {
+    const counts: Partial<Record<OpportunityStatus, number>> = {};
+    const values: Partial<Record<OpportunityStatus, number>> = {};
+    opportunities.forEach(o => {
+      counts[o.status] = (counts[o.status] ?? 0) + 1;
+      values[o.status] = (values[o.status] ?? 0) + o.value;
+    });
+    return { counts, values };
+  }, [opportunities]);
 
   // ── Bootstrap fetch ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -106,7 +131,7 @@ export default function ForecastPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>
-            Dự Báo Doanh Thu
+            {isManager ? 'Dự Báo Doanh Thu' : 'Dự Báo Của Tôi'}
           </h1>
           {/* totalCount tính trên activeOpps — không đếm Lost */}
           <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>

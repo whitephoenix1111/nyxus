@@ -131,15 +131,16 @@ export function AddActivityModal({ onClose, onSave, allowedClientIds, showAssign
     if (!taskForm.title.trim()) { setTaskError('Tiêu đề task không được để trống'); return; }
     setTaskSaving(true);
     await addTask({
-      title:         taskForm.title.trim(),
-      clientId:      form.clientId,
+      title: taskForm.title.trim(),
+      clientId: form.clientId,
       opportunityId: form.opportunityId || undefined,
-      dueDate:       taskForm.dueDate || undefined,
-      status:        'pending',
+      dueDate: taskForm.dueDate || undefined,
+      status: 'pending',
       // assignedTo chỉ gửi khi showAssignedTo=true (manager).
       // Sales: undefined → API tự inject session.id (POST /api/tasks).
-      assignedTo:    showAssignedTo ? (taskForm.assignedTo || undefined) : undefined,
-      createdFrom:   savedActId,
+      assignedTo: showAssignedTo ? (taskForm.assignedTo || undefined) : undefined,
+      createdFrom: savedActId,
+      company: undefined
     });
     setTaskSaving(false);
     onClose();

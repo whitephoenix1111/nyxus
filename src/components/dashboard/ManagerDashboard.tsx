@@ -86,7 +86,7 @@ export function ManagerDashboard({ opportunities, activities, tasks, clients, ow
           <h2 className="text-lg font-semibold text-white mb-4">Chỉ số hiệu suất chính</h2>
           <div className="flex gap-4">
             <div className="flex-1 min-w-0">
-              <KPIScatterChart data={chartData} averageValue={avgValue} />
+              <KPIScatterChart data={chartData} averageValue={avgValue} clientMap={clientMap} />
             </div>
             <KPISummary totalSales={totalSales} openQuotes={openQuotes} opportunities={totalOpps} />
           </div>

@@ -69,13 +69,19 @@ export function DocRow({ doc, clientName, clientCompany, clientOwnerId, onStar, 
         {doc.size}
       </span>
 
-      {/* Upload date + owner (manager only) */}
+      {/* Upload date */}
       <div className="flex items-center gap-2 w-28 shrink-0">
         <Clock size={11} className="text-[#444]" />
         <span className="text-xs text-[#555]">{fmtDate(doc.uploadedAt)}</span>
-        {/* Guard ownership qua client.ownerId — nhất quán với API layer */}
-        {isManager && <OwnerBadge ownerId={clientOwnerId} size="sm" />}
       </div>
+
+      {/* Sales owner — cột riêng, chỉ hiện cho manager */}
+      {/* Guard ownership qua client.ownerId — nhất quán với API layer */}
+      {isManager && (
+        <div className="w-32 shrink-0">
+          <OwnerBadge ownerId={clientOwnerId} size="md" />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">

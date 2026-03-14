@@ -13,7 +13,6 @@ export function EditRow({ opp, onSave, onCancel }: {
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
-    clientName: opp.clientName,
     company: opp.company,
     value: String(opp.value),
     status: opp.status,
@@ -22,10 +21,7 @@ export function EditRow({ opp, onSave, onCancel }: {
 
   return (
     <tr className="border-b border-[#1a1a1a] bg-[#0d0d0d]">
-      <td className="px-4 py-2">
-        <input className={inputCls} value={form.clientName}
-          onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} />
-      </td>
+      {/* Removed clientName input as it's not part of Opportunity */}
       <td className="px-4 py-2">
         <input className={inputCls} value={form.company}
           onChange={e => setForm(f => ({ ...f, company: e.target.value }))} />
@@ -48,7 +44,7 @@ export function EditRow({ opp, onSave, onCancel }: {
         <div className="flex items-center gap-1">
           <button
             onClick={() => onSave({
-              clientName: form.clientName, company: form.company,
+              company: form.company,
               value: Number(form.value), status: form.status,
               confidence: Number(form.confidence),
             })}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Plus, UserPlus, Pencil } from 'lucide-react';
-import type { Client, ClientTag, ClientFormData } from '@/types';
+import type { Client, ClientTag, StoredClientTag, ClientFormData } from '@/types';
 import { Avatar, Field } from './_atoms';
 import { ALL_TAGS, TAG_STYLE, TAG_LABELS, INDUSTRIES, viIndustry, getInitials } from './_constants';
 
@@ -182,7 +182,10 @@ export function ClientFormModal({ mode, initialData, onClose, onSave }: ClientFo
       email: form.email.trim(), phone: form.phone.trim(),
       industry: form.industry, country: form.country.trim(),
       website: form.website.trim(), notes: form.notes.trim(),
-      tags: form.tags,
+      // Filter ra computed tags (warm, cold, new-lead, priority) trước khi gửi lên API —
+      // client.tags chỉ lưu StoredClientTag ('enterprise' | 'mid-market').
+      // Computed tags được tính lại tại render, không persist vào DB.
+      tags: form.tags.filter((t): t is StoredClientTag => t === 'enterprise' || t === 'mid-market'),
       // avatar derive từ name — 2 initials viết hoa, VD: "Nguyễn Văn A" → "NV"
       avatar: getInitials(form.name),
     });

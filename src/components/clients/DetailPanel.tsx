@@ -8,12 +8,14 @@
 //   3. Panel đã có z-index riêng, inline confirm đơn giản hơn về z-index stacking.
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Briefcase, Mail, Phone, Globe, Trash2, Pencil, AlertTriangle, ArchiveRestore } from 'lucide-react';
-import type { ClientWithStats } from '@/types';
+import type { ClientWithStats, Opportunity } from '@/types';
 import { Avatar, TagBadge } from './_atoms';
 import { viIndustry } from './_constants';
 import { useDocumentStore, useDocumentsForClient } from '@/store/useDocumentStore';
+import { useIsManager } from '@/store/useAuthStore';
 import { DetailPanelOpps } from './DetailPanelOpps';
 import { DetailPanelDocs } from './DetailPanelDocs';
+import { AddDealModal } from './AddDealModal';
 
 interface DetailPanelProps {
   client: ClientWithStats;
@@ -27,8 +29,10 @@ interface DetailPanelProps {
 type PanelTab = 'opps' | 'docs';
 
 export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit, onRestore }: DetailPanelProps) {
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [activeTab,   setActiveTab]   = useState<PanelTab>('opps');
+  const [showConfirm,   setShowConfirm]   = useState(false);
+  const [showAddDeal,   setShowAddDeal]   = useState(false);
+  const [activeTab,     setActiveTab]     = useState<PanelTab>('opps');
+  const isManager = useIsManager();
 
   const { fetchDocuments } = useDocumentStore();
   const clientDocs = useDocumentsForClient(client.id);
@@ -162,7 +166,13 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
             ))}
           </div>
 
-          {activeTab === 'opps' && <DetailPanelOpps client={client} />}
+          {activeTab === 'opps' && (
+            <DetailPanelOpps
+              client={client}
+              // Không cho thêm deal khi client đã archived — archived client không có pipeline active
+              onAddDeal={!client.archivedAt ? () => setShowAddDeal(true) : undefined}
+            />
+          )}
           {activeTab === 'docs' && (
             <DetailPanelDocs
               clientId={client.id}
@@ -177,6 +187,19 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
           Hiển thị số openOpps để user biết hậu quả cascade trước khi xác nhận.
           Dữ liệu bị xóa: opps chưa Won + tasks pending.
           Dữ liệu giữ lại: activities, tasks done, opps Won (xem soft-delete spec). */}
+      {showAddDeal && (
+        <AddDealModal
+          clientId={client.id}
+          clientName={client.name}
+          onClose={() => setShowAddDeal(false)}
+          onSave={(_opp: Opportunity) => {
+            // store đã được update bởi addOpportunity() bên trong AddDealModal
+            // — đóng modal là đủ, ClientWithStats sẽ re-compute từ store
+            setShowAddDeal(false);
+          }}
+        />
+      )}
+
       {showConfirm && (
         <>
           <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-[2px]" onClick={() => setShowConfirm(false)} />

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, UserCheck } from 'lucide-react';
-import type { Client } from '@/types';
+import type { Client, StoredClientTag } from '@/types';
 import { Avatar, Field } from './_atoms';
 import { ALL_TAGS, TAG_STYLE, INDUSTRIES, viIndustry, getInitials } from './_constants';
 
@@ -112,7 +112,9 @@ export function ExistingClientModal({ onClose, onSave }: ExistingClientModalProp
    * Dùng `Client['tags'][number]` thay vì `ClientTag` để type khớp chính xác
    * với định nghĩa trong `Client` interface mà không cần import thêm.
    */
-  function toggleTag(tag: Client['tags'][number]) {
+  // ALL_TAGS bao gồm cả computed tags (ClientTag) nhưng form.tags chỉ lưu StoredClientTag.
+  // Filter tại đây: chỉ toggle nếu tag là StoredClientTag, bỏ qua computed tags.
+  function toggleTag(tag: StoredClientTag) {
     setForm(f => ({
       ...f,
       tags: f.tags.includes(tag) ? f.tags.filter(t => t !== tag) : [...f.tags, tag],
@@ -307,7 +309,7 @@ export function ExistingClientModal({ onClose, onSave }: ExistingClientModalProp
                  * Hành vi này có thể là intentional (form nội bộ, audience là sales biết tag key)
                  * hoặc là omission nhỏ. Nếu muốn nhất quán, đổi thành: {TAG_LABELS[tag]}
                  */}
-                {ALL_TAGS.map(tag => {
+                {ALL_TAGS.filter((t): t is StoredClientTag => t === 'enterprise' || t === 'mid-market').map(tag => {
                   const s = TAG_STYLE[tag];
                   const active = form.tags.includes(tag);
                   return (

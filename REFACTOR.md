@@ -3,10 +3,10 @@
 ## Prompt khởi động cho new chat
 
 ```
-Bạn là claude desktop.
+Tôi đang dùng claude desktop
 Đọc toàn bộ D:\nyxus\REFACTOR.md trước khi làm bất cứ việc gì.
 File này chứa kiến trúc và workflow của toàn hệ thống.
-Nếu cần chi tiết hơn, đọc D:\nyxus\docs\ theo hướng dẫn trong START_HERE.md.
+Chỉ đọc mỗi file này thôi, chưa cần đụng chạm gì thì đừng làm gì quá nhiều.
 ```
 
 ---

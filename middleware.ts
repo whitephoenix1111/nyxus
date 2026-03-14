@@ -23,7 +23,8 @@ import { verifyTokenEdge, SESSION_COOKIE_NAME } from './src/lib/auth-edge';
 const PUBLIC_PATHS = ['/login', '/api/auth'];
 
 // Routes chỉ manager mới truy cập được
-const MANAGER_ONLY = ['/forecast'];
+// /forecast đã mở cho sales — page tự filter opps theo ownerId nếu role === 'salesperson'
+const MANAGER_ONLY: string[] = [];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

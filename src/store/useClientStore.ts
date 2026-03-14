@@ -2,8 +2,9 @@
 
 import { create } from 'zustand';
 import { useMemo } from 'react';
-import type { Activity, Client, ClientStatus, ClientWithStats, Opportunity } from '@/types';
+import type { Activity, Client, ClientStatus, ClientWithStats, Opportunity, StoredClientTag } from '@/types';
 import { computeClientTags } from '@/lib/computeClientTags';
+import { useOpportunityStore } from './useOpportunityStore';
 
 interface ClientStore {
   clients: Client[];
@@ -12,9 +13,34 @@ interface ClientStore {
 
   fetchClients: () => Promise<void>;
   addClient: (data: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
-  addLead: (data: { name: string; company: string; email?: string; phone?: string; value: number; notes?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
+  addLead: (data: {
+    name: string;
+    company: string;
+    email?: string;
+    phone?: string;
+    industry?: string;
+    title: string;
+    value: number;
+    notes?: string;
+    // Manager truyền để giao lead cho salesperson. Salesperson không truyền — API tự inject.
+    ownerId?: string;
+  }) => Promise<{ clientId: string; opportunityId: string } | null>;
   // Thêm khách hàng cũ (Client + Opportunity Won tự động)
-  addExistingClient: (data: { name: string; company: string; email?: string; phone?: string; industry?: string; country?: string; website?: string; notes?: string; tags?: Client['tags']; value: number; contractDate?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
+  addExistingClient: (data: {
+    name: string;
+    company: string;
+    email?: string;
+    phone?: string;
+    industry?: string;
+    country?: string;
+    website?: string;
+    notes?: string;
+    tags?: Client['tags'];
+    value: number;
+    contractDate?: string;
+    // Manager truyền để giao cho salesperson. Salesperson không truyền — API tự inject.
+    ownerId?: string;
+  }) => Promise<{ clientId: string; opportunityId: string } | null>;
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
   // Soft delete: đánh dấu archivedAt, không xóa khỏi DB.
   // Trả về clientId để caller có thể xóa opportunities liên quan khỏi store.
@@ -66,6 +92,8 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       }
       const { client, opportunity } = await res.json();
       set((s) => ({ clients: [...s.clients, client] }));
+      // Sync opportunity vào store ngay — không chờ invalidate
+      useOpportunityStore.getState().addOpportunity(opportunity);
       return { clientId: client.id, opportunityId: opportunity.id };
     } catch {
       set({ error: 'Failed to create existing client' });
@@ -86,6 +114,9 @@ export const useClientStore = create<ClientStore>((set, get) => ({
       }
       const { client, opportunity } = await res.json();
       set((s) => ({ clients: [...s.clients, client] }));
+      // Sync opportunity vào store ngay — không chờ invalidate.
+      // Nếu chỉ dựa vào invalidate() mà network chậm/lỗi, lead sẽ không hiện.
+      useOpportunityStore.getState().addOpportunity(opportunity);
       return { clientId: client.id, opportunityId: opportunity.id };
     } catch {
       set({ error: 'Failed to create lead' });
@@ -155,7 +186,7 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
     return realClients.map((client) => {
       const clientOpps = opportunities.filter((o) => o.clientId === client.id);
 
-      const totalValue    = clientOpps.reduce((sum, o) => sum + o.value, 0);
+      const totalValue = clientOpps.reduce((sum, o) => sum + o.value, 0);
       const forecastValue = clientOpps.reduce(
         (sum, o) => sum + o.value * (o.confidence / 100), 0
       );
@@ -187,7 +218,9 @@ export function useClientsWithComputedTags(opportunities: Opportunity[], activit
   return useMemo((): ClientWithStats[] => {
     return withStats.map(client => ({
       ...client,
-      tags: computeClientTags(client, opportunities, activities),
+      tags: computeClientTags(client, opportunities, activities).filter(tag =>
+        ['enterprise', 'mid-market', 'new-lead', 'warm', 'cold'].includes(tag as string)
+      ) as StoredClientTag[],
     }));
   }, [withStats, opportunities, activities]);
 }

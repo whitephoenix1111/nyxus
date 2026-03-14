@@ -235,5 +235,40 @@
     "confidence": 15,
     "notes": "vfafaf",
     "statusHistory": []
+  },
+  {
+    "id": "opp-9a94b37c",
+    "ownerId": "usr-005",
+    "clientId": "cli-333eed3a",
+    "title": "Rn Ty 123",
+    "value": 9233,
+    "status": "Won",
+    "date": "2026-03-14",
+    "confidence": 100,
+    "notes": "HAHAHAH",
+    "statusHistory": [
+      {
+        "from": "Lead",
+        "to": "Negotiation",
+        "date": "2026-03-14"
+      },
+      {
+        "from": "Negotiation",
+        "to": "Won",
+        "date": "2026-03-14"
+      }
+    ]
+  },
+  {
+    "id": "opp-d8df79f9",
+    "ownerId": "usr-004",
+    "clientId": "cli-005",
+    "title": "FED 14/3",
+    "value": 36215,
+    "status": "Qualified",
+    "confidence": 35,
+    "date": "2026-03-14",
+    "notes": "Hhaha 458",
+    "statusHistory": []
   }
 ]

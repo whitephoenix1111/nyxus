@@ -2,6 +2,7 @@
 //
 // Tạo mới  → initial = emptyLeadForm()  → POST /api/leads (tạo Client + Opportunity)
 //             showFirstTask=true để hiện section lên lịch liên hệ đầu tiên
+//             showAssignedTo=true (manager) → hiện dropdown "Giao cho salesperson"
 //
 // Chỉnh sửa → initial = map từ Opportunity → PATCH /api/opportunities/[id]
 //             chỉ cập nhật title, value, date, notes
@@ -14,6 +15,7 @@ import { useState } from 'react';
 import { X, CalendarClock } from 'lucide-react';
 import type { OpportunityStatus } from '@/types';
 import { INDUSTRIES, viIndustry } from '@/components/clients/_constants';
+import { useSalespersons } from '@/store/useUsersStore';
 
 export type LeadFormState = {
   // Dùng khi tạo mới — tạo Client
@@ -22,7 +24,7 @@ export type LeadFormState = {
   avatar:     string;
   email:      string;
   industry:   string;
-  // Dùng khi edit — tên deal
+  // Tên deal — bắt buộc ở cả tạo mới lẫn edit
   title: string;
   // Chung
   value:      string;
@@ -33,6 +35,8 @@ export type LeadFormState = {
   // Chỉ khi tạo mới (showFirstTask=true)
   firstTaskTitle: string;
   firstTaskDate:  string;
+  // Manager: id salesperson được giao. Salesperson không thấy field này.
+  ownerId: string;
 };
 
 export const emptyLeadForm = (): LeadFormState => ({
@@ -50,6 +54,7 @@ export const emptyLeadForm = (): LeadFormState => ({
   status:     'Lead',
   firstTaskTitle: '',
   firstTaskDate:  '',
+  ownerId: '',
 });
 
 const inputCls = 'w-full rounded-xl bg-[#0a0a0a] border px-3 py-2 text-sm text-white focus:outline-none transition-colors';
@@ -65,16 +70,19 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-export function LeadModal({ initial, title, onClose, onSave, showFirstTask = false }: {
+export function LeadModal({ initial, title, onClose, onSave, showFirstTask = false, showAssignedTo = false }: {
   initial: LeadFormState;
   title: string;
   onClose: () => void;
   onSave: (f: LeadFormState) => void;
   showFirstTask?: boolean;
+  // true khi caller là manager — hiện dropdown "Giao cho"
+  showAssignedTo?: boolean;
 }) {
   const [form, setForm]     = useState<LeadFormState>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof LeadFormState, string>>>({});
   const [, setTouched]      = useState<Partial<Record<keyof LeadFormState, boolean>>>({});
+  const salespersons        = useSalespersons();
 
   const handle = (k: keyof LeadFormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -89,19 +97,20 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
       // Tạo mới — validate clientName, company
       if (!form.clientName.trim()) e.clientName = 'Tên khách hàng không được để trống';
       if (!form.company.trim())    e.company    = 'Công ty không được để trống';
-    } else {
-      // Edit — validate title
-      if (!form.title.trim()) e.title = 'Tên deal không được để trống';
     }
-    if (!form.value.trim())                                       e.value = 'Giá trị không được để trống';
+    // title bắt buộc ở cả tạo mới lẫn edit — sales phải đặt tên deal ngay từ đầu
+    if (!form.title.trim()) e.title = 'Tên deal không được để trống';
+    if (!form.value.trim())                                        e.value = 'Giá trị không được để trống';
     else if (isNaN(Number(form.value)) || Number(form.value) <= 0) e.value = 'Giá trị phải là số dương';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Email không hợp lệ';
+    // Manager phải chọn salesperson khi tạo mới
+    if (showAssignedTo && showFirstTask && !form.ownerId) e.ownerId = 'Vui lòng chọn người phụ trách';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function handleSave() {
-    setTouched({ clientName: true, company: true, title: true, value: true, email: true });
+    setTouched({ clientName: true, company: true, title: true, value: true, email: true, ownerId: true });
     if (validate()) onSave(form);
   }
 
@@ -121,7 +130,7 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          {showFirstTask ? (
+          {showFirstTask && (
             // ── Tạo mới: nhập thông tin Client ──────────────────────────────
             <>
               <div className="col-span-2">
@@ -153,16 +162,34 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
                   </select>
                 </Field>
               </div>
+
+              {/* Dropdown "Giao cho" — chỉ hiện khi manager tạo mới */}
+              {showAssignedTo && (
+                <div className="col-span-2">
+                  <Field label="Giao cho *" error={errors.ownerId}>
+                    <select
+                      className={`${inputCls} ${borderFor('ownerId')} appearance-none`}
+                      value={form.ownerId}
+                      onChange={handle('ownerId')}
+                    >
+                      <option value="">— Chọn salesperson —</option>
+                      {salespersons.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              )}
             </>
-          ) : (
-            // ── Edit: chỉ đổi tên deal ────────────────────────────────────
-            <div className="col-span-2">
-              <Field label="Tên deal *" error={errors.title}>
-                <input className={`${inputCls} ${borderFor('title')}`}
-                  placeholder="Ví dụ: Enterprise Deal Q3" value={form.title} onChange={handle('title')} />
-              </Field>
-            </div>
           )}
+
+          {/* Tên deal — bắt buộc ở cả tạo mới lẫn edit */}
+          <div className="col-span-2">
+            <Field label="Tên deal *" error={errors.title}>
+              <input className={`${inputCls} ${borderFor('title')}`}
+                placeholder="Ví dụ: Gói Enterprise Q3" value={form.title} onChange={handle('title')} />
+            </Field>
+          </div>
 
           <div>
             <Field label="Giá trị (USD) *" error={errors.value}>

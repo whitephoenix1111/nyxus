@@ -180,6 +180,7 @@ export default function DocumentsPage() {
           <div className="w-20 shrink-0 text-xs font-semibold text-[#444] uppercase tracking-widest">Danh mục</div>
           <div className="w-16 text-right shrink-0 text-xs font-semibold text-[#444] uppercase tracking-widest">Kích thước</div>
           <div className="w-28 shrink-0 text-xs font-semibold text-[#444] uppercase tracking-widest">Ngày tải</div>
+          {isManager && <div className="w-32 shrink-0 text-xs font-semibold text-[#444] uppercase tracking-widest">Sales</div>}
           <div className="w-16 shrink-0" />
         </div>
 

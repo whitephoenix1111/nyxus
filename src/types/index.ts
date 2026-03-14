@@ -1,5 +1,7 @@
 // ── Opportunity Status ────────────────────────────────────────────
 
+import { ReactNode } from "react";
+
 export type OpportunityStatus = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
 
 // Confidence mặc định khi promote vào stage mới
@@ -24,6 +26,8 @@ export const STAGE_CONFIDENCE_RANGE: Record<OpportunityStatus, number | null> = 
 };
 
 export interface Opportunity {
+  company: any;
+  clientName: any;
   id: string;
   ownerId: string;            // FK → User.id — copy từ client.ownerId khi tạo
   clientId: string;           // FK → Client.id
@@ -43,8 +47,11 @@ export interface Opportunity {
 
 // ── Client ───────────────────────────────────────────────────────
 
-// Chỉ 2 tag này được lưu vào DB — warm/cold/new-lead/priority là computed, không lưu
-export type ClientTag = 'enterprise' | 'mid-market';
+// Tag lưu vào DB — chỉ 2 loại này vì mang ý nghĩa phân khúc, không thể tính tự động
+export type StoredClientTag = 'enterprise' | 'mid-market';
+
+// Tất cả tag dùng trong UI — gồm StoredClientTag + computed tags (không lưu DB)
+export type ClientTag = StoredClientTag | 'priority' | 'warm' | 'cold' | 'new-lead';
 
 // Trạng thái của client — derived từ opportunities qua useClientStatus() selector
 // 'active'  = có ít nhất 1 opp status ∉ {Won, Lost}
@@ -63,7 +70,7 @@ export interface Client {
   industry: string;           // English key — dịch sang VI ở UI layer
   country: string;
   website: string;
-  tags: ClientTag[];          // chỉ lưu 'enterprise' và 'mid-market'
+  tags: StoredClientTag[];     // chỉ lưu 'enterprise' và 'mid-market' — computed tags không vào đây
   notes: string;
   createdAt: string;          // ISO date: "2025-09-15"
   archivedAt?: string;        // ISO date — soft delete, ẩn khỏi UI nhưng giữ lịch sử
@@ -106,6 +113,7 @@ export interface Activity {
 export type TaskStatus = 'pending' | 'done';
 
 export interface Task {
+  company: ReactNode;
   id: string;
   title: string;
   clientId: string;           // FK → Client.id

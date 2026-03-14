@@ -205,6 +205,7 @@ export default function LeadsPage() {
           title="Thêm lead mới"
           initial={emptyLeadForm()}
           showFirstTask
+          showAssignedTo={isManager}
           onClose={() => setShowAdd(false)}
           onSave={handleAdd}
         />
@@ -229,6 +230,7 @@ export default function LeadsPage() {
               status:     editTarget.status,
               firstTaskTitle: '',
               firstTaskDate:  '',
+              ownerId: '',
             }}
             onClose={() => setEditTarget(null)}
             onSave={handleEdit}

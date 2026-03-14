@@ -121,7 +121,7 @@ export function ActivityCard({
               </span>
             </span>
             {/* Manager: hiện avatar + tên sales phụ trách — join từ client.ownerId */}
-            {isManager && <OwnerBadge ownerId={clientOwnerId} size="sm" />}
+            {isManager && <OwnerBadge ownerId={clientOwnerId} size="md" />}
           </div>
         </div>
       </div>

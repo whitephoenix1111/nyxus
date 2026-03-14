@@ -412,5 +412,20 @@
     "tags": [],
     "notes": "vfafaf",
     "createdAt": "2026-03-14"
+  },
+  {
+    "id": "cli-333eed3a",
+    "ownerId": "usr-005",
+    "name": "Huyen Huyen",
+    "company": "FPT",
+    "avatar": "HH",
+    "email": "fpt52@gmail.com",
+    "phone": "",
+    "industry": "Media",
+    "country": "",
+    "website": "",
+    "tags": [],
+    "notes": "HAHAHAH",
+    "createdAt": "2026-03-14"
   }
 ]

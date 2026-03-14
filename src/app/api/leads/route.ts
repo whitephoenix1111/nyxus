@@ -5,22 +5,32 @@ import type { Client, Opportunity } from '@/types';
 import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
 // POST /api/leads
-// Body: { name, company, email?, phone?, value, notes? }
+// Body: { name, company, email?, phone?, industry?, title, value, notes?, ownerId? }
 // Returns: { client: Client, opportunity: Opportunity }
 // Side effects: tạo đồng thời Client + Opportunity (Lead, confidence: 15%)
+//
+// Manager có thể truyền ownerId để giao lead cho salesperson.
+// Salesperson không truyền ownerId — server dùng session.id.
 
 export async function POST(request: Request) {
   try {
-    const session = await requireRole(['salesperson']);
+    // Manager được phép tạo lead và chọn salesperson phụ trách qua body.ownerId
+    const session = await requireRole(['salesperson', 'manager']);
     const body = await request.json();
-    const { name, company, email = '', phone = '', avatar, value, notes = '' } = body;
+    const { name, company, email = '', phone = '', avatar, title, value, notes = '' } = body;
 
-    if (!name || !company || !value) {
+    if (!name || !company || !title || !value) {
       return NextResponse.json(
-        { error: 'name, company, value là bắt buộc' },
+        { error: 'name, company, title, value là bắt buộc' },
         { status: 400 }
       );
     }
+
+    // Manager có thể giao lead cho salesperson qua ownerId.
+    // Salesperson không được tự assign cho người khác — luôn dùng session.id.
+    const ownerId = session.role === 'manager' && body.ownerId
+      ? body.ownerId
+      : session.id;
 
     const today = new Date().toISOString().split('T')[0];
     const clientId = `cli-${crypto.randomUUID().slice(0, 8)}`;
@@ -36,7 +46,7 @@ export async function POST(request: Request) {
     // 1. Tạo Client
     const newClient: Client = {
       id:        clientId,
-      ownerId:   session.id,
+      ownerId,
       name,
       company,
       avatar:    generatedAvatar,
@@ -51,17 +61,20 @@ export async function POST(request: Request) {
     };
 
     // 2. Tạo Opportunity: Lead, confidence = 15% (cố định)
+    // title bắt buộc từ client — không fallback, API đã validate ở trên
     const newOpportunity: Opportunity = {
-      id:         oppId,
-      ownerId:    session.id,
+      id: oppId,
+      ownerId,
       clientId,
-      title:      body.title || `Lead — ${company}`,
-      value:      Number(value),
-      status:     'Lead',
-      date:       today,
+      title,
+      value: Number(value),
+      status: 'Lead',
+      date: today,
       confidence: STAGE_DEFAULT_CONFIDENCE['Lead'], // 15
       notes,
       statusHistory: [],
+      company: undefined,
+      clientName: undefined
     };
 
     // 3. Ghi vào JSON files

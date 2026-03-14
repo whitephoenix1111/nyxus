@@ -34,13 +34,14 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const EMPTY: Omit<Task, 'id' | 'createdAt'> = {
-  title:         '',
-  clientId:      '',
+  title: '',
+  clientId: '',
   opportunityId: undefined,
-  dueDate:       '',
-  status:        'pending',
-  assignedTo:    undefined,
-  notes:         '',
+  dueDate: '',
+  status: 'pending',
+  assignedTo: undefined,
+  notes: '',
+  company: undefined
 };
 
 // ── Props ─────────────────────────────────────────────────────────────────────

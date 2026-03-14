@@ -11,7 +11,7 @@
 import { NextResponse } from 'next/server';
 import { readJSON, writeJSON } from '@/lib/json-db';
 import { requireRole } from '@/lib/session';
-import type { Opportunity, Client } from '@/types';
+import type { Opportunity, Client, OpportunityStatus } from '@/types';
 import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 
 // ── GET /api/opportunities ────────────────────────────────────────────────────
@@ -68,16 +68,18 @@ export async function POST(request: Request) {
 
     const opps   = await readJSON<Opportunity[]>('opportunities.json');
     const newOpp: Opportunity = {
-      id:         `opp-${crypto.randomUUID().slice(0, 8)}`,
-      ownerId:    client.ownerId,  // copy từ client, không nhận từ body
-      clientId:   body.clientId,
-      title:      body.title,
-      value:      Number(body.value),
-      status:     body.status     ?? 'Lead',
-      confidence: body.confidence ?? STAGE_DEFAULT_CONFIDENCE[body.status ?? 'Lead'],
-      date:       body.date       ?? new Date().toISOString().split('T')[0],
-      notes:      body.notes,
+      id: `opp-${crypto.randomUUID().slice(0, 8)}`,
+      ownerId: client.ownerId, // copy từ client, không nhận từ body
+      clientId: body.clientId,
+      title: body.title,
+      value: Number(body.value),
+      status: body.status ?? 'Lead',
+      confidence: body.confidence ?? STAGE_DEFAULT_CONFIDENCE[(body.status ?? 'Lead') as OpportunityStatus],
+      date: body.date ?? new Date().toISOString().split('T')[0],
+      notes: body.notes,
       statusHistory: [],
+      company: undefined,
+      clientName: undefined
     };
 
     opps.push(newOpp);

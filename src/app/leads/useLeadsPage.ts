@@ -157,11 +157,16 @@ export function useLeadsPage() {
 
   const handleAdd = async (form: LeadFormState) => {
     const result = await addLead({
-      name:    form.clientName,
-      company: form.company,
-      email:   form.email,
-      value:   Number(form.value),
-      notes:   form.notes,
+      name:     form.clientName,
+      company:  form.company,
+      email:    form.email,
+      industry: form.industry,
+      value:    Number(form.value),
+      notes:    form.notes,
+      // title do user nhập — không để API fallback sinh string vô nghĩa
+      title:    form.title,
+      // Manager: ownerId là salesperson được chọn. Salesperson: '' → không truyền → API dùng session.id
+      ownerId:  form.ownerId || undefined,
     });
 
     if (result) {
@@ -169,11 +174,12 @@ export function useLeadsPage() {
 
       if (form.firstTaskTitle.trim()) {
         await addTask({
-          title:         form.firstTaskTitle.trim(),
-          clientId:      result.clientId,
+          title: form.firstTaskTitle.trim(),
+          clientId: result.clientId,
           opportunityId: result.opportunityId,
-          dueDate:       form.firstTaskDate || undefined,
-          status:        'pending',
+          dueDate: form.firstTaskDate || undefined,
+          status: 'pending',
+          company: undefined
         });
         await invalidate(['tasks']);
       }

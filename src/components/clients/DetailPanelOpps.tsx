@@ -1,5 +1,6 @@
 // src/components/clients/DetailPanelOpps.tsx — Tab "Cơ hội" trong DetailPanel của một Client
 
+import { Plus } from 'lucide-react';
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils';
 import type { ClientWithStats, OpportunityStatus } from '@/types';
 import { StatusBadge } from './_atoms';
@@ -13,6 +14,8 @@ import { StatusBadge } from './_atoms';
  */
 interface DetailPanelOppsProps {
   client: ClientWithStats;
+  /** Callback mở AddDealModal — undefined khi caller không cho phép tạo deal (VD: archived client) */
+  onAddDeal?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -28,7 +31,7 @@ interface DetailPanelOppsProps {
  * Component này read-only — không có action tạo/sửa/xóa deal ở đây.
  * Để promote stage hoặc log activity, dùng PromoteModal / AddActivityModal từ Leads/Opps page.
  */
-export function DetailPanelOpps({ client }: DetailPanelOppsProps) {
+export function DetailPanelOpps({ client, onAddDeal }: DetailPanelOppsProps) {
 
   // ── Tính phân bổ theo status ───────────────────────────────────────────────
 
@@ -95,9 +98,18 @@ export function DetailPanelOpps({ client }: DetailPanelOppsProps) {
       {/* ── Opportunity list ──────────────────────────────────────────────────── */}
       {client.opportunities.length > 0 ? (
         <div className="px-6 py-4">
-          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--color-text-faint)' }}>
-            Tất cả cơ hội
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-text-faint)' }}>
+              Tất cả cơ hội
+            </p>
+            {onAddDeal && (
+              <button onClick={onAddDeal}
+                className="flex items-center gap-1 text-xs font-medium transition-colors hover:opacity-80"
+                style={{ color: 'var(--color-brand)' }}>
+                <Plus size={11} /> Thêm deal
+              </button>
+            )}
+          </div>
           <div className="flex flex-col gap-2">
             {/*
              * Spread trước khi sort để không mutate mảng gốc từ store.
@@ -156,8 +168,14 @@ export function DetailPanelOpps({ client }: DetailPanelOppsProps) {
         </div>
       ) : (
         /* Empty state — client chưa có deal nào (có thể vừa import hoặc lead mới) */
-        <div className="px-6 py-8 text-center">
+        <div className="px-6 py-8 flex flex-col items-center gap-3">
           <p className="text-sm" style={{ color: 'var(--color-text-faint)' }}>Chưa có cơ hội nào.</p>
+          {onAddDeal && (
+            <button onClick={onAddDeal}
+              className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2">
+              <Plus size={12} /> Thêm cơ hội đầu tiên
+            </button>
+          )}
         </div>
       )}
     </>

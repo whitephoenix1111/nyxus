@@ -5,6 +5,7 @@
 // Reference line ngang = average value của toàn bộ opportunities.
 'use client';
 
+import React, { useMemo } from 'react';
 import {
   ScatterChart,
   Scatter,
@@ -22,12 +23,16 @@ interface DataPoint {
   month: number;
   value: number;
   status: OpportunityStatus;
-  clientName: string;
+  clientId: string;
+  title: string;
+  id: string;
 }
 
 interface KPIScatterChartProps {
   data: DataPoint[];
   averageValue: number;
+  // clientMap dùng để resolve tên client trong tooltip — join tại đây thay vì lưu clientName vào data
+  clientMap?: Map<string, { name: string; company: string }>;
 }
 
 // ── Custom Dot ─────────────────────────────────────────────────────────────────
@@ -72,14 +77,20 @@ const STATUS_VI: Record<OpportunityStatus, string> = {
   Lost: 'Thất bại',
 };
 
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, clientMap }: CustomTooltipProps & { clientMap?: Map<string, { name: string; company: string }> }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
+  const client = clientMap?.get(d.clientId);
 
   return (
     <div className="rounded-xl border border-[#2a2a2a] bg-[#111] px-3 py-2 text-sm shadow-xl">
-      <p className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-        {d.clientName}
+      {client && (
+        <p className="font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+          {client.name} · {client.company}
+        </p>
+      )}
+      <p className={client ? 'text-[#888]' : 'font-semibold text-white'} style={{ fontFamily: 'var(--font-display)' }}>
+        {d.title}
       </p>
       <p className="text-[#DFFF00]" style={{ fontFamily: 'var(--font-mono)' }}>
         {formatCurrencyFull(d.value)}
@@ -92,14 +103,19 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 // Workaround: Recharts content prop nhận unknown, cần cast thủ công để dùng CustomTooltip typed.
-function renderTooltip(props: unknown) {
-  const p = props as { active?: boolean; payload?: unknown };
-  return (
-    <CustomTooltip
-      active={p.active}
-      payload={p.payload as unknown as RechartsTooltipPayload[]}
-    />
-  );
+// clientMap được đóng vào closure của renderTooltipWith — tránh re-create function mỗi render
+// (nếu dùng inline arrow function, Recharts sẽ re-mount tooltip liên tục).
+function makeRenderTooltip(clientMap?: Map<string, { name: string; company: string }>) {
+  return function renderTooltip(props: unknown) {
+    const p = props as { active?: boolean; payload?: unknown };
+    return (
+      <CustomTooltip
+        active={p.active}
+        payload={p.payload as unknown as RechartsTooltipPayload[]}
+        clientMap={clientMap}
+      />
+    );
+  };
 }
 
 // ── Y-axis helpers ─────────────────────────────────────────────────────────────
@@ -135,9 +151,11 @@ function buildYAxis(data: DataPoint[]): { domain: [number, number]; ticks: numbe
 
 // ── Chart ──────────────────────────────────────────────────────────────────────
 
-export default function KPIScatterChart({ data, averageValue }: KPIScatterChartProps) {
+export default function KPIScatterChart({ data, averageValue, clientMap }: KPIScatterChartProps) {
   const xTicks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   const { domain, ticks } = buildYAxis(data);
+  // useMemo để renderTooltip không re-create khi parent re-render vô lý
+  const renderTooltip = useMemo(() => makeRenderTooltip(clientMap), [clientMap]);
 
   return (
     <div className="w-full">
@@ -170,7 +188,7 @@ export default function KPIScatterChart({ data, averageValue }: KPIScatterChartP
             tickLine={false}
             width={40}
           />
-          <Tooltip content={renderTooltip} cursor={false} />
+          <Tooltip content={renderTooltip as ((props: unknown) => React.ReactNode)} cursor={false} />
           {/* Reference line = average value, dashed, giúp so sánh từng deal với mức trung bình */}
           <ReferenceLine
             y={averageValue}

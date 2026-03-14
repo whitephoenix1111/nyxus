@@ -25,12 +25,13 @@ export function useMonthlyChartData() {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() =>
     opps.map(o => ({
-      month:  new Date(o.date).getMonth(),
-      value:  o.value,
-      date:   o.date,
-      status: o.status,
-      title:  o.title,
-      id:     o.id,
+      month:    new Date(o.date).getMonth(),
+      value:    o.value,
+      date:     o.date,
+      status:   o.status,
+      title:    o.title,
+      id:       o.id,
+      clientId: o.clientId,
     })),
     [opps]
   );
