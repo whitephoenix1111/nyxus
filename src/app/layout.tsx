@@ -3,6 +3,7 @@ import { Syne, DM_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import TopNav from '@/components/ui/TopNav';
 import AuthProvider from '@/components/ui/AuthProvider';
+import DataProvider from '@/components/ui/DataProvider';
 import ToastContainer from '@/components/ui/ToastContainer';
 
 /* ── Display font: Syne ───────────────────────────────────────
@@ -53,9 +54,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="font-sans bg-black text-white antialiased">
         <AuthProvider>
-          <TopNav />
-          <main className="min-h-screen">{children}</main>
-          <ToastContainer />
+          {/* DataProvider bootstrap tất cả stores sau khi login —
+              các trang không tự fetch khi mount nữa, chỉ đọc từ store */}
+          <DataProvider>
+            <TopNav />
+            <main className="min-h-screen">{children}</main>
+            <ToastContainer />
+          </DataProvider>
         </AuthProvider>
       </body>
     </html>

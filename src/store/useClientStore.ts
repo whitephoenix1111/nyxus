@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { useMemo } from 'react';
-import type { Client, ClientWithStats, Opportunity } from '@/types';
+import type { Activity, Client, ClientStatus, ClientWithStats, Opportunity } from '@/types';
 import { computeClientTags } from '@/lib/computeClientTags';
 
 interface ClientStore {
@@ -13,10 +13,11 @@ interface ClientStore {
   fetchClients: () => Promise<void>;
   addClient: (data: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
   addLead: (data: { name: string; company: string; email?: string; phone?: string; value: number; notes?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
-  // Thêm khách hàng cũ (isProspect=false + Opportunity Won tự động)
+  // Thêm khách hàng cũ (Client + Opportunity Won tự động)
   addExistingClient: (data: { name: string; company: string; email?: string; phone?: string; industry?: string; country?: string; website?: string; notes?: string; tags?: Client['tags']; value: number; contractDate?: string }) => Promise<{ clientId: string; opportunityId: string } | null>;
   updateClient: (id: string, data: Partial<Client>) => Promise<void>;
-  // Soft delete: đánh dấu archivedAt, không xóa khỏi DB
+  // Soft delete: đánh dấu archivedAt, không xóa khỏi DB.
+  // Trả về clientId để caller có thể xóa opportunities liên quan khỏi store.
   deleteClient: (id: string) => Promise<boolean>;
   // Manager only: assign lead sang salesperson khác
   assignLead: (clientId: string, newOwnerId: string) => Promise<boolean>;
@@ -115,7 +116,7 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     try {
       const res = await fetch(`/api/clients/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
-      return true; // Caller sẽ refetch opportunities & activities
+      return true;
     } catch {
       set({ clients: prev, error: 'Failed to delete client' });
       return false;
@@ -149,8 +150,8 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
   const clients = useClientStore((s) => s.clients);
 
   return useMemo((): ClientWithStats[] => {
-    // Chỉ hiển thị client thật (isProspect=false) và chưa bị archive
-    const realClients = clients.filter(c => !c.isProspect && !c.archivedAt);
+    // Chỉ hiển thị client chưa bị archive
+    const realClients = clients.filter(c => !c.archivedAt);
     return realClients.map((client) => {
       const clientOpps = opportunities.filter((o) => o.clientId === client.id);
 
@@ -180,15 +181,15 @@ export function useClientsWithStats(opportunities: Opportunity[]) {
  *   - manual tags (enterprise, mid-market) giữ nguyên nếu có trong DB
  *   - computed tags (new-lead, warm, cold, priority) tính lại mỗi render
  */
-export function useClientsWithComputedTags(opportunities: Opportunity[]) {
+export function useClientsWithComputedTags(opportunities: Opportunity[], activities: Activity[] = []) {
   const withStats = useClientsWithStats(opportunities);
 
   return useMemo((): ClientWithStats[] => {
     return withStats.map(client => ({
       ...client,
-      tags: computeClientTags(client, opportunities),
+      tags: computeClientTags(client, opportunities, activities),
     }));
-  }, [withStats, opportunities]);
+  }, [withStats, opportunities, activities]);
 }
 
 export function useClientIndustries() {
@@ -205,4 +206,21 @@ export function useTopClientsByValue(opportunities: Opportunity[], limit = 5) {
     () => [...withStats].sort((a, b) => b.totalValue - a.totalValue).slice(0, limit),
     [withStats, limit]
   );
+}
+
+/**
+ * Derive trạng thái của một client từ opportunities — thay thế client.isProspect đã xóa.
+ * - 'active'  = có ít nhất 1 opp status ∉ {Won, Lost}
+ * - 'won'     = tất cả opps đều Won/Lost, có ít nhất 1 Won
+ * - 'no-deal' = không có opp nào
+ */
+export function useClientStatus(clientId: string, opportunities: Opportunity[]): ClientStatus {
+  return useMemo(() => {
+    const opps = opportunities.filter(o => o.clientId === clientId);
+    if (opps.length === 0) return 'no-deal';
+    const hasActive = opps.some(o => o.status !== 'Won' && o.status !== 'Lost');
+    if (hasActive) return 'active';
+    const hasWon = opps.some(o => o.status === 'Won');
+    return hasWon ? 'won' : 'no-deal';
+  }, [clientId, opportunities]);
 }

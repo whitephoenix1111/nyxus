@@ -1,6 +1,14 @@
-// DEPRECATED — đã chuyển sang src/components/ui/ClientCombobox.tsx
-// File này không còn được import bởi bất kỳ module nào. Có thể xóa an toàn.
-// @deprecated
+// src/components/ui/ClientCombobox.tsx
+// Combobox tìm kiếm khách hàng — dùng chung cho AddActivityModal và TaskModal.
+//
+// Props:
+//   value             — clientId đang chọn
+//   onChange          — callback (clientId, clientName, company)
+//   error             — thông báo lỗi hiển thị dưới field
+//   allowedClientIds  — nếu truyền vào, chỉ hiển thị các client trong Set này
+//                       (dùng cho Sales — chỉ thấy client của mình)
+//                       undefined = Manager, thấy tất cả
+
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -11,16 +19,26 @@ interface ClientComboboxProps {
   value: string;
   onChange: (clientId: string, clientName: string, company: string) => void;
   error?: string;
+  allowedClientIds?: Set<string>;
 }
 
-export function ClientCombobox({ value, onChange, error }: ClientComboboxProps) {
-  const clients      = useClientStore(s => s.clients);
+export function ClientCombobox({ value, onChange, error, allowedClientIds }: ClientComboboxProps) {
+  const allClients = useClientStore(s => s.clients);
+
+  // Sales chỉ thấy client mình sở hữu; Manager (allowedClientIds=undefined) thấy tất cả
+  const clients = useMemo(() =>
+    allowedClientIds
+      ? allClients.filter(c => allowedClientIds.has(c.id))
+      : allClients,
+    [allClients, allowedClientIds]
+  );
+
   const [query, setQuery] = useState('');
   const [open,  setOpen]  = useState(false);
-  const containerRef      = useRef<HTMLDivElement>(null);
+  const ref               = useRef<HTMLDivElement>(null);
+  const selected          = clients.find(c => c.id === value);
 
-  const selected = clients.find(c => c.id === value);
-
+  // Lọc + giới hạn 10 kết quả để tránh render dài
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     if (!q) return clients.slice(0, 10);
@@ -32,9 +50,10 @@ export function ClientCombobox({ value, onChange, error }: ClientComboboxProps) 
       .slice(0, 10);
   }, [clients, query]);
 
+  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
         setQuery('');
       }
@@ -44,7 +63,7 @@ export function ClientCombobox({ value, onChange, error }: ClientComboboxProps) 
   }, []);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => { setOpen(o => !o); setQuery(''); }}
@@ -79,6 +98,7 @@ export function ClientCombobox({ value, onChange, error }: ClientComboboxProps) 
               onChange={e => setQuery(e.target.value)}
             />
           </div>
+
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="px-3 py-3 text-xs text-center" style={{ color: 'var(--color-text-faint)' }}>

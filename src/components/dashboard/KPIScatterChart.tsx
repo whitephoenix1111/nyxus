@@ -1,3 +1,8 @@
+// src/components/dashboard/KPIScatterChart.tsx — Scatter chart opportunities theo tháng và value
+//
+// Trục X: tháng (0–11), Trục Y: value (VND) với domain động từ buildYAxis.
+// Mỗi dot = một opportunity, màu theo status, Won có glow effect.
+// Reference line ngang = average value của toàn bộ opportunities.
 'use client';
 
 import {
@@ -25,7 +30,8 @@ interface KPIScatterChartProps {
   averageValue: number;
 }
 
-// ── Custom Dot ─────────────────────────────────────────────────
+// ── Custom Dot ─────────────────────────────────────────────────────────────────
+
 function CustomDot(props: { cx?: number; cy?: number; payload?: DataPoint }) {
   const { cx, cy, payload } = props;
   if (!cx || !cy || !payload) return null;
@@ -35,6 +41,7 @@ function CustomDot(props: { cx?: number; cy?: number; payload?: DataPoint }) {
     <circle
       cx={cx}
       cy={cy}
+      // Won dot to hơn và có glow để nổi bật so với các stage khác
       r={isOrder ? 5 : 3.5}
       fill={color}
       style={isOrder ? { filter: 'drop-shadow(0 0 6px #DFFF00aa)' } : undefined}
@@ -43,7 +50,10 @@ function CustomDot(props: { cx?: number; cy?: number; payload?: DataPoint }) {
   );
 }
 
-// ── Custom Tooltip ─────────────────────────────────────────────
+// ── Custom Tooltip ─────────────────────────────────────────────────────────────
+// Recharts không export type cho tooltip payload nên cần định nghĩa thủ công.
+// renderTooltip() là workaround để ép kiểu — Recharts truyền props dạng unknown.
+
 interface RechartsTooltipPayload {
   payload: DataPoint;
 }
@@ -81,6 +91,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   );
 }
 
+// Workaround: Recharts content prop nhận unknown, cần cast thủ công để dùng CustomTooltip typed.
 function renderTooltip(props: unknown) {
   const p = props as { active?: boolean; payload?: unknown };
   return (
@@ -91,25 +102,39 @@ function renderTooltip(props: unknown) {
   );
 }
 
-// Làm tròn lên bội số gần nhất của `step`
+// ── Y-axis helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Làm tròn `value` lên bội số gần nhất của `step`.
+ * Dùng để tính ceiling sạch cho Y-axis domain.
+ */
 function ceilTo(value: number, step: number) {
   return Math.ceil(value / step) * step;
 }
 
-// Tính domain + ticks Y-axis động từ data
+/**
+ * Tính domain và ticks Y-axis tự động theo data thực tế.
+ * Step size thay đổi theo magnitude để ticks không quá dày hoặc quá thưa:
+ *   > 500k → step 100k | > 200k → 50k | > 50k → 25k | ≤ 50k → 10k
+ * Ceiling = max value × 1.15 (headroom 15%) làm tròn lên bội số step.
+ *
+ * @param data DataPoints của chart.
+ * @returns domain [0, ceiling] và mảng ticks đều nhau.
+ */
 function buildYAxis(data: DataPoint[]): { domain: [number, number]; ticks: number[] } {
   if (data.length === 0) {
     return { domain: [0, 100_000], ticks: [0, 25_000, 50_000, 75_000, 100_000] };
   }
   const maxVal  = Math.max(...data.map((d) => d.value));
   const step    = maxVal > 500_000 ? 100_000 : maxVal > 200_000 ? 50_000 : maxVal > 50_000 ? 25_000 : 10_000;
-  const ceiling = ceilTo(maxVal * 1.15, step); // 15% headroom
+  const ceiling = ceilTo(maxVal * 1.15, step);
   const ticks: number[] = [];
   for (let v = 0; v <= ceiling; v += step) ticks.push(v);
   return { domain: [0, ceiling], ticks };
 }
 
-// ── Chart ──────────────────────────────────────────────────────
+// ── Chart ──────────────────────────────────────────────────────────────────────
+
 export default function KPIScatterChart({ data, averageValue }: KPIScatterChartProps) {
   const xTicks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   const { domain, ticks } = buildYAxis(data);
@@ -122,6 +147,7 @@ export default function KPIScatterChart({ data, averageValue }: KPIScatterChartP
           <XAxis
             type="number"
             dataKey="month"
+            // domain [-0.5, 11.5] để tháng đầu/cuối không bị cắt bởi trục
             domain={[-0.5, 11.5]}
             ticks={xTicks}
             tickFormatter={(v) => MONTH_LABELS[v as number] ?? ''}
@@ -145,6 +171,7 @@ export default function KPIScatterChart({ data, averageValue }: KPIScatterChartP
             width={40}
           />
           <Tooltip content={renderTooltip} cursor={false} />
+          {/* Reference line = average value, dashed, giúp so sánh từng deal với mức trung bình */}
           <ReferenceLine
             y={averageValue}
             stroke="#DFFF00"

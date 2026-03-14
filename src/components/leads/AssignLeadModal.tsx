@@ -13,7 +13,7 @@ interface Props {
   onAssign: (newOwnerId: string) => Promise<void>;
 }
 
-export function AssignLeadModal({ opp, onClose, onAssign }: Props) {
+export function AssignLeadModal({ opp, clientName, clientCompany, onClose, onAssign }: Props & { clientName: string; clientCompany: string }) {
   const [salespeople, setSalespeople] = useState<User[]>([]);
   const [selected, setSelected]       = useState<string>(opp.ownerId ?? '');
   const [loading, setLoading]         = useState(false);
@@ -48,7 +48,7 @@ export function AssignLeadModal({ opp, onClose, onAssign }: Props) {
             </div>
             <div>
               <h2 className="text-base font-semibold text-white">Assign Lead</h2>
-              <p className="text-xs text-[#555]">{opp.clientName} · {opp.company}</p>
+              <p className="text-xs text-[#555]">{clientName} · {clientCompany}</p>
             </div>
           </div>
           <button onClick={onClose}

@@ -11,11 +11,9 @@
     "country": "USA",
     "website": "techsolution.com",
     "tags": [
-      "enterprise",
-      "priority"
+      "enterprise"
     ],
     "notes": "Long-term partner. Decision maker is Tommy directly.",
-    "isProspect": false,
     "createdAt": "2024-09-15"
   },
   {
@@ -33,7 +31,6 @@
       "enterprise"
     ],
     "notes": "UK-based. Prefers calls on Thursday afternoons.",
-    "isProspect": false,
     "createdAt": "2024-10-18"
   },
   {
@@ -48,12 +45,11 @@
     "country": "USA",
     "website": "pinnacle.biz",
     "tags": [
-      "mid-market",
-      "warm"
+      "mid-market"
     ],
     "notes": "Requested a custom pricing proposal in March.",
-    "isProspect": false,
-    "createdAt": "2024-11-05"
+    "createdAt": "2024-11-05",
+    "archivedAt": "2026-03-13"
   },
   {
     "ownerId": "usr-004",
@@ -67,11 +63,9 @@
     "country": "USA",
     "website": "vertexlabs.dev",
     "tags": [
-      "enterprise",
-      "priority"
+      "enterprise"
     ],
     "notes": "Fast decision cycle. Prefers Slack over email.",
-    "isProspect": false,
     "createdAt": "2024-11-20"
   },
   {
@@ -85,11 +79,8 @@
     "industry": "Marketing",
     "country": "Singapore",
     "website": "auroradigital.sg",
-    "tags": [
-      "new-lead"
-    ],
+    "tags": [],
     "notes": "Came from LinkedIn outreach. Still evaluating options.",
-    "isProspect": false,
     "createdAt": "2025-01-08",
     "archivedAt": "2026-03-12"
   },
@@ -105,11 +96,9 @@
     "country": "USA",
     "website": "ironclad.com",
     "tags": [
-      "enterprise",
-      "warm"
+      "enterprise"
     ],
     "notes": "Large deal in pipeline. Procurement team involved.",
-    "isProspect": true,
     "createdAt": "2024-12-01"
   },
   {
@@ -127,8 +116,8 @@
       "mid-market"
     ],
     "notes": "Strong technical team. Needs demo with CTO.",
-    "isProspect": true,
-    "createdAt": "2025-01-15"
+    "createdAt": "2025-01-15",
+    "archivedAt": "2026-03-14"
   },
   {
     "ownerId": "usr-004",
@@ -138,15 +127,16 @@
     "avatar": "LC",
     "email": "lchen@horizonfin.com",
     "phone": "+852 2200 3344",
-    "industry": "Finance",
+    "industry": "Marketing",
     "country": "Hong Kong",
     "website": "horizonfin.com",
     "tags": [
       "enterprise",
+      "mid-market",
+      "warm",
       "priority"
     ],
     "notes": "Regulatory compliance is top priority for them.",
-    "isProspect": false,
     "createdAt": "2024-09-30"
   },
   {
@@ -161,11 +151,9 @@
     "country": "UAE",
     "website": "summitpartners.ae",
     "tags": [
-      "enterprise",
-      "warm"
+      "enterprise"
     ],
     "notes": "Seeking regional expansion support. High-value prospect.",
-    "isProspect": true,
     "createdAt": "2024-12-10"
   },
   {
@@ -183,7 +171,6 @@
       "mid-market"
     ],
     "notes": "Spanish-speaking account. Follow up after proposal review.",
-    "isProspect": true,
     "createdAt": "2025-01-30"
   },
   {
@@ -198,11 +185,9 @@
     "country": "USA",
     "website": "clearpathsales.com",
     "tags": [
-      "enterprise",
-      "priority"
+      "enterprise"
     ],
     "notes": "Closed biggest deal of Q3. Explore upsell opportunities.",
-    "isProspect": false,
     "createdAt": "2024-08-20"
   },
   {
@@ -216,11 +201,8 @@
     "industry": "Technology",
     "country": "Australia",
     "website": "nexusdynamics.com.au",
-    "tags": [
-      "cold"
-    ],
+    "tags": [],
     "notes": "Initial interest in April. No response since.",
-    "isProspect": true,
     "createdAt": "2025-02-10"
   },
   {
@@ -235,11 +217,9 @@
     "country": "USA",
     "website": "crestwoodconsult.com",
     "tags": [
-      "warm",
       "mid-market"
     ],
     "notes": "Met at SaaStr 2025. Strong alignment with our product.",
-    "isProspect": true,
     "createdAt": "2025-02-28"
   },
   {
@@ -253,12 +233,8 @@
     "industry": "Logistics",
     "country": "South Korea",
     "website": "pathfinderllc.kr",
-    "tags": [
-      "cold",
-      "new-lead"
-    ],
+    "tags": [],
     "notes": "Low engagement so far. Needs nurturing campaign.",
-    "isProspect": true,
     "createdAt": "2025-03-05"
   },
   {
@@ -276,8 +252,8 @@
       "enterprise"
     ],
     "notes": "Government procurement rules apply. Long sales cycles.",
-    "isProspect": false,
-    "createdAt": "2024-10-25"
+    "createdAt": "2024-10-25",
+    "archivedAt": "2026-03-13"
   },
   {
     "ownerId": "usr-004",
@@ -290,11 +266,8 @@
     "industry": "Retail",
     "country": "South Africa",
     "website": "vantagepointco.com",
-    "tags": [
-      "warm"
-    ],
+    "tags": [],
     "notes": "Focused on omnichannel strategy. Demo went well.",
-    "isProspect": true,
     "createdAt": "2025-03-18"
   },
   {
@@ -309,11 +282,9 @@
     "country": "Spain",
     "website": "dawnlightagency.es",
     "tags": [
-      "mid-market",
-      "warm"
+      "mid-market"
     ],
     "notes": "Creative agency. Looking for a scalable CRM solution.",
-    "isProspect": true,
     "createdAt": "2025-04-01"
   },
   {
@@ -327,12 +298,8 @@
     "industry": "Venture Capital",
     "country": "USA",
     "website": "basecampventures.vc",
-    "tags": [
-      "cold",
-      "new-lead"
-    ],
+    "tags": [],
     "notes": "VC firm — potential portfolio-wide deal if onboarded.",
-    "isProspect": true,
     "createdAt": "2025-04-15"
   },
   {
@@ -346,12 +313,10 @@
     "industry": "Manufacturing",
     "country": "Canada",
     "website": "redstoneworks.ca",
-    "tags": [
-      "warm"
-    ],
+    "tags": [],
     "notes": "Industrial CRM use case. Liked the forecast feature.",
-    "isProspect": true,
-    "createdAt": "2025-05-15"
+    "createdAt": "2025-05-15",
+    "archivedAt": "2026-03-14"
   },
   {
     "ownerId": "usr-004",
@@ -365,11 +330,9 @@
     "country": "Japan",
     "website": "tokyobridge.jp",
     "tags": [
-      "enterprise",
-      "priority"
+      "enterprise"
     ],
     "notes": "Formal relationship. Always use honorifics in communication.",
-    "isProspect": false,
     "createdAt": "2024-11-01"
   },
   {
@@ -383,11 +346,71 @@
     "industry": "Design",
     "country": "UK",
     "website": "edgeworks.studio",
-    "tags": [
-      "cold"
-    ],
+    "tags": [],
     "notes": "Creative studio. Budget is limited but potential for referrals.",
-    "isProspect": true,
     "createdAt": "2025-06-10"
+  },
+  {
+    "id": "cli-119b109b",
+    "ownerId": "usr-004",
+    "name": "Hoa Thần Vũ",
+    "company": "FPT",
+    "avatar": "HT",
+    "email": "hoahoa366@gmail.com",
+    "phone": "0921056478",
+    "industry": "SaaS",
+    "country": "Mỹ",
+    "website": "",
+    "tags": [
+      "enterprise",
+      "mid-market"
+    ],
+    "notes": "fffff",
+    "createdAt": "2026-03-14"
+  },
+  {
+    "id": "cli-f2d6a71e",
+    "ownerId": "usr-004",
+    "name": "Trần Thái Bân",
+    "company": "GOP",
+    "avatar": "TT",
+    "email": "gop@gmail.com",
+    "phone": "",
+    "industry": "Unknown",
+    "country": "",
+    "website": "",
+    "tags": [],
+    "notes": "ddd",
+    "createdAt": "2026-03-14"
+  },
+  {
+    "id": "cli-05cf775f",
+    "ownerId": "usr-004",
+    "name": "Thượng Jian",
+    "company": "OPD",
+    "avatar": "TJ",
+    "email": "opd@gmail.com",
+    "phone": "",
+    "industry": "Unknown",
+    "country": "",
+    "website": "",
+    "tags": [],
+    "notes": "ffff",
+    "createdAt": "2026-03-14"
+  },
+  {
+    "id": "cli-9ab01861",
+    "ownerId": "usr-004",
+    "name": "Giang Duy",
+    "company": "GJK",
+    "avatar": "GD",
+    "email": "gjk@gmail.com",
+    "phone": "",
+    "industry": "Unknown",
+    "country": "",
+    "website": "",
+    "tags": [],
+    "notes": "vfafaf",
+    "createdAt": "2026-03-14"
   }
 ]

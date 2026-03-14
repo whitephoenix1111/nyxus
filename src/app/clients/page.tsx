@@ -1,10 +1,17 @@
+// src/app/clients/page.tsx — Trang danh sách khách hàng
+//
+// Chỉ hiển thị client KHÔNG có opp active (status = 'won' | 'no-deal').
+// Client có ≥1 opp active thuộc về /leads — không hiển thị ở đây.
+// Sales thấy client của mình; Manager thấy tất cả và có thêm OwnerFilter.
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { TrendingUp, X, UserCheck } from 'lucide-react';
+import { TrendingUp, X, UserCheck, Archive } from 'lucide-react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useActivityStore } from '@/store/useActivityStore';
 import { useClientStore, useClientsWithComputedTags, useClientIndustries } from '@/store/useClientStore';
+import { useDataStore } from '@/store/useDataStore';
 import { formatCurrency } from '@/lib/utils';
 import type { Client } from '@/types';
 import { ClientCard } from '@/components/clients/ClientCard';
@@ -15,84 +22,121 @@ import { SearchInput, IndustrySelect } from '@/components/clients/FilterBar';
 import { viIndustry } from '@/components/clients/_constants';
 import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
 import { useUsersStore } from '@/store/useUsersStore';
-import { OwnerFilter } from '@/components/ui/OwnerBadge';
+import { OwnerFilter } from '@/components/ui/OwnerFilter';
 
 export default function ClientsPage() {
   const currentUser = useCurrentUser();
   const isManager   = useIsManager();
   const { fetchUsers } = useUsersStore();
 
-  const { opportunities, fetchOpportunities } = useOpportunityStore();
-  const { fetchActivities } = useActivityStore();
-  const { clients, isLoading, fetchClients, deleteClient, addClient, addExistingClient, updateClient } = useClientStore();
+  const { opportunities, fetchOpportunities, removeByClientId } = useOpportunityStore();
+  const { activities, fetchActivities } = useActivityStore();
+  const { clients, isLoading, fetchClients, deleteClient, addExistingClient, updateClient } = useClientStore();
+  const { bootstrapped, invalidate } = useDataStore();
 
-  const [search, setSearch] = useState('');
-  const [industryFilter, setIndustryFilter] = useState('');
+  const [search, setSearch]                     = useState('');
+  const [industryFilter, setIndustryFilter]     = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showExistingModal, setShowExistingModal] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [ownerFilter, setOwnerFilter] = useState('');
+  const [editingClient, setEditingClient]       = useState<Client | null>(null);
+  const [ownerFilter, setOwnerFilter]           = useState('');
+  const [showArchived, setShowArchived]         = useState(false);
 
   const industries = useClientIndustries();
-  const allClientsWithStats = useClientsWithComputedTags(opportunities);
+  const allClientsWithStats = useClientsWithComputedTags(opportunities, activities);
 
-  // Sales chỉ thấy client của mình — Manager thấy tất cả
-  const clientsWithStats = isManager
+  // Scope theo role: sales chỉ thấy client của mình
+  const ownedClients = isManager
     ? allClientsWithStats
     : allClientsWithStats.filter(c => c.ownerId === currentUser?.id);
 
+  // Archived clients lấy thẳng từ raw store vì useClientsWithComputedTags đã filter !archivedAt.
+  // Build ClientWithStats thủ công để ClientCard nhận đúng type.
+  const rawClients = useClientStore(s => s.clients);
+  const archivedClients = useMemo(() => {
+    const base = rawClients.filter(c => !!c.archivedAt && (isManager || c.ownerId === currentUser?.id));
+    return base.map(c => ({
+      ...c,
+      tags:             c.tags ?? [],
+      opportunities:    opportunities.filter(o => o.clientId === c.id),
+      opportunityCount: opportunities.filter(o => o.clientId === c.id).length,
+      totalValue:       opportunities.filter(o => o.clientId === c.id).reduce((s, o) => s + o.value, 0),
+      forecastValue:    opportunities.filter(o => o.clientId === c.id).reduce((s, o) => s + o.value * (o.confidence / 100), 0),
+      topStatus:        null,
+    }));
+  }, [rawClients, opportunities, isManager, currentUser]);
+
+  // Chỉ fetch khi DataProvider chưa bootstrap — tránh fetch thừa khi navigate
   useEffect(() => {
+    if (bootstrapped) return;
     fetchClients();
     fetchOpportunities();
     fetchUsers();
-  }, [fetchClients, fetchOpportunities, fetchUsers]);
+  }, [bootstrapped, fetchClients, fetchOpportunities, fetchUsers]);
 
   const selectedClient = useMemo(
-    () => clientsWithStats.find(c => c.id === selectedClientId) ?? null,
-    [clientsWithStats, selectedClientId]
+    () => [...ownedClients, ...archivedClients].find(c => c.id === selectedClientId) ?? null,
+    [ownedClients, archivedClients, selectedClientId]
   );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let list = ownerFilter ? clientsWithStats.filter(c => c.ownerId === ownerFilter) : clientsWithStats;
+
+    // showArchived: hiển archived clients — lấy từ archivedClients (raw store)
+    // Mặc định: chỉ hiện active clients không có opp đang mở.
+    let list = showArchived
+      ? (ownerFilter ? archivedClients.filter(c => c.ownerId === ownerFilter) : archivedClients)
+      : (() => {
+          const active = ownerFilter ? ownedClients.filter(c => c.ownerId === ownerFilter) : ownedClients;
+          // Chỉ hiện client đã có ít nhất 1 opp Won và không có opp đang active.
+          // Client chỉ có Lost / no-deal → không hiện ở đây (chưa chốt được đọn nào).
+          // Client có opp đang chạy → thuộc /leads.
+          return active.filter(c => {
+            const clientOpps = opportunities.filter(o => o.clientId === c.id);
+            const hasWon    = clientOpps.some(o => o.status === 'Won');
+            const hasActive = clientOpps.some(o => o.status !== 'Won' && o.status !== 'Lost');
+            return hasWon && !hasActive;
+          });
+        })();
+
     if (q) list = list.filter(c =>
       c.name.toLowerCase().includes(q) ||
       c.company.toLowerCase().includes(q) ||
       c.industry.toLowerCase().includes(q) ||
       viIndustry(c.industry).toLowerCase().includes(q)
     );
+
     if (industryFilter) list = list.filter(c => c.industry === industryFilter);
     return [...list].sort((a, b) => b.totalValue - a.totalValue);
-  }, [clientsWithStats, ownerFilter, search, industryFilter]);
+  }, [ownedClients, archivedClients, opportunities, ownerFilter, search, industryFilter, showArchived]);
 
-  const totalRevenue = useMemo(() => clientsWithStats.reduce((s, c) => s + c.totalValue, 0), [clientsWithStats]);
-  const totalOpps    = useMemo(() => clientsWithStats.reduce((s, c) => s + c.opportunityCount, 0), [clientsWithStats]);
+  const totalRevenue = useMemo(
+    () => filtered.reduce((s, c) => s + c.totalValue, 0),
+    [filtered]
+  );
+  const totalOpps = useMemo(
+    () => filtered.reduce((s, c) => s + c.opportunityCount, 0),
+    [filtered]
+  );
 
-  // canEdit: chỉ dùng để hiện nút "Khách hàng hiện có" — salesperson mới tạo được
   const canCreate = currentUser?.role === 'salesperson';
+  const hasFilter = search || industryFilter;
 
   async function handleSaveEdit(data: ClientFormData) {
     if (!editingClient) return;
-    // Giữ nguyên ownerId và isProspect từ client gốc — modal không quản lý 2 field này
     await updateClient(editingClient.id, {
       ...data,
-      ownerId:    editingClient.ownerId,
-      isProspect: editingClient.isProspect,
+      ownerId: editingClient.ownerId,
     });
   }
 
-  const hasFilter = search || industryFilter;
-
   return (
     <div className="flex flex-col px-6 py-5">
-
-      {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Khách hàng</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-            {clients.length} khách hàng · {totalOpps} cơ hội
+            {filtered.length} khách hàng · {totalOpps} cơ hội
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,25 +157,31 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Filter bar */}
       <div className="flex items-center gap-3 mb-5">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Tìm theo tên, công ty..."
-        />
-        <IndustrySelect
-          value={industryFilter}
-          onChange={setIndustryFilter}
-          industries={industries}
-        />
+        <SearchInput value={search} onChange={setSearch} placeholder="Tìm theo tên, công ty..." />
+        <IndustrySelect value={industryFilter} onChange={setIndustryFilter} industries={industries} />
+        {/* Toggle hiển thị archived — theo pattern HubSpot/Pipedrive */}
+        <button
+          onClick={() => setShowArchived(v => !v)}
+          className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+          style={{
+            background: showArchived ? 'var(--color-brand-subtle, #DFFF0022)' : 'var(--color-surface)',
+            border:     `1px solid ${showArchived ? 'var(--color-brand)' : 'var(--color-border)'}`,
+            color:      showArchived ? 'var(--color-brand)' : 'var(--color-text-subtle)',
+          }}>
+          <Archive size={13} />
+          Đã lưu trữ
+          {archivedClients.length > 0 && (
+            <span className="tabular-nums" style={{ color: showArchived ? 'var(--color-brand)' : 'var(--color-text-faint)' }}>
+              {archivedClients.length}
+            </span>
+          )}
+        </button>
         <OwnerFilter value={ownerFilter} onChange={setOwnerFilter} />
         {hasFilter && (
-          <button
-            onClick={() => { setSearch(''); setIndustryFilter(''); }}
+          <button onClick={() => { setSearch(''); setIndustryFilter(''); }}
             className="flex items-center gap-1 text-xs transition-colors hover:text-white"
-            style={{ color: 'var(--color-text-subtle)' }}
-          >
+            style={{ color: 'var(--color-text-subtle)' }}>
             <X size={11} /> Xóa filter
           </button>
         )}
@@ -140,7 +190,6 @@ export default function ClientsPage() {
         </span>
       </div>
 
-      {/* Grid */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex h-48 items-center justify-center">
@@ -165,7 +214,12 @@ export default function ClientsPage() {
         ) : (
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4 pb-4">
             {filtered.map(client => (
-              <ClientCard key={client.id} client={client} onClick={() => setSelectedClientId(client.id)} />
+              <ClientCard
+                key={client.id}
+                client={client}
+                archived={!!client.archivedAt}
+                onClick={() => setSelectedClientId(client.id)}
+              />
             ))}
           </div>
         )}
@@ -180,9 +234,17 @@ export default function ClientsPage() {
             const ok = await deleteClient(id);
             setSelectedClientId(null);
             if (ok) {
-              fetchOpportunities();
-              fetchActivities();
+              removeByClientId(id);
+              await invalidate(['clients', 'opportunities', 'activities', 'tasks']);
             }
+          }}
+          onRestore={async id => {
+            // null → API xóa field archivedAt khỏi record (undefined bị JSON.stringify bỏ qua)
+            await updateClient(id, { archivedAt: null } as Partial<Client> & { archivedAt: null });
+            setSelectedClientId(null);
+            // invalidate cả opportunities — vì khi archive đã gọi removeByClientId()
+            // xóa opps khỏi store, restore phải fetch lại để opps hiện trở lại ở /opportunities
+            await invalidate(['clients', 'opportunities']);
           }}
           onEdit={() => setEditingClient(selectedClient)}
         />
@@ -193,7 +255,7 @@ export default function ClientsPage() {
           onClose={() => setShowExistingModal(false)}
           onSave={async (data) => {
             await addExistingClient(data);
-            fetchOpportunities();
+            await invalidate(['clients', 'opportunities']);
           }}
         />
       )}

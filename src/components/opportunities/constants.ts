@@ -18,5 +18,5 @@ export const STATUS_STYLE: Record<OpportunityStatus, { bg: string; text: string;
   Lost:        { bg: '#1C0505',   text: '#EF4444', border: '#7f1d1d' },
 };
 
-export type SortKey = 'clientName' | 'company' | 'value' | 'status' | 'date' | 'confidence';
+export type SortKey = 'clientName' | 'title' | 'value' | 'status' | 'date' | 'confidence';
 export type SortDir = 'asc' | 'desc';

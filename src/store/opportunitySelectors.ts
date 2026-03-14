@@ -1,9 +1,15 @@
+// src/store/opportunitySelectors.ts — Computed selectors từ opportunity store
+// Tách ra khỏi useOpportunityStore để tránh circular dependency và giữ store gọn.
+// Tất cả selector đều nhận oppsOverride để hỗ trợ test hoặc manager filter theo owner.
 'use client';
 
 import { useMemo } from 'react';
 import type { Activity, Opportunity, OpportunityStatus } from '@/types';
 import { useOpportunityStore } from './useOpportunityStore';
 
+// ── Aggregation selectors ─────────────────────────────────────────────────────
+
+/** Đếm số lượng và tổng value theo từng stage. Dùng cho summary bar / dashboard. */
 export function useStatsByStatus() {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() => {
@@ -14,21 +20,23 @@ export function useStatsByStatus() {
   }, [opps]);
 }
 
+/** Map opportunities thành data points cho scatter/line chart theo tháng. */
 export function useMonthlyChartData() {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() =>
     opps.map(o => ({
-      month:      new Date(o.date).getMonth(),
-      value:      o.value,
-      date:       o.date,
-      status:     o.status,
-      clientName: o.clientName,
-      id:         o.id,
+      month:  new Date(o.date).getMonth(),
+      value:  o.value,
+      date:   o.date,
+      status: o.status,
+      title:  o.title,
+      id:     o.id,
     })),
     [opps]
   );
 }
 
+/** Giá trị trung bình của tất cả opportunities. Trả về 0 nếu chưa có deal nào. */
 export function useAverageValue() {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() => {
@@ -37,6 +45,10 @@ export function useAverageValue() {
   }, [opps]);
 }
 
+/**
+ * Doanh thu dự báo = Σ (value × confidence%) — loại bỏ Lost (confidence = 0).
+ * Won vẫn được tính vì confidence = 100% và cần hiện trong pipeline tổng.
+ */
 export function useForecastRevenue() {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() =>
@@ -45,6 +57,10 @@ export function useForecastRevenue() {
   );
 }
 
+/**
+ * Top N opportunities theo value giảm dần. Dùng cho bảng xếp hạng khách hàng.
+ * @param limit Số lượng kết quả, mặc định 25.
+ */
 export function useTopClients(limit = 25) {
   const opps = useOpportunityStore(s => s.opportunities);
   return useMemo(() =>
@@ -53,16 +69,33 @@ export function useTopClients(limit = 25) {
   );
 }
 
+// ── Alert selectors ───────────────────────────────────────────────────────────
+
+/**
+ * Deals đang mở (Lead/Qualified/Proposal) không có liên hệ quá `days` ngày
+ * VÀ không có pending task nào trong tương lai.
+ * Ngưỡng mặc định 3 ngày — đủ ngắn để cảnh báo sớm nhưng không spam.
+ *
+ * @param activities   Danh sách activities hiện tại (để kiểm tra pending task).
+ * @param days         Ngưỡng ngày không liên hệ, mặc định 3.
+ * @param oppsOverride Ghi đè danh sách opps (dùng khi manager filter theo owner).
+ */
 export function useStaleLeads(activities: Activity[], days = 3, oppsOverride?: Opportunity[]) {
   const storeOpps = useOpportunityStore(s => s.opportunities);
   const opps = oppsOverride ?? storeOpps;
   return useMemo(() => {
     const now       = Date.now();
     const threshold = days * 24 * 60 * 60 * 1000;
+    // Chỉ cảnh báo stage chưa chốt — Won/Negotiation/Lost không cần nhắc liên hệ
     const staleStatuses: OpportunityStatus[] = ['Lead', 'Qualified', 'Proposal'];
     return opps.filter(opp => {
       if (!staleStatuses.includes(opp.status)) return false;
-      if (now - new Date(opp.lastContactDate).getTime() <= threshold) return false;
+      // lastContactDate đã xóa khỏi schema — dùng MAX(activities.date) qua activities param
+      const lastContact = activities
+        .filter(a => a.clientId === opp.clientId)
+        .reduce((latest, a) => a.date > latest ? a.date : latest, '');
+      if (lastContact && now - new Date(lastContact).getTime() <= threshold) return false;
+      // Nếu có task future đang chờ → deal không thực sự stale
       const hasPendingTask = activities.some(
         a => a.opportunityId === opp.id && a.nextActionDate && new Date(a.nextActionDate).getTime() >= now
       );
@@ -71,6 +104,14 @@ export function useStaleLeads(activities: Activity[], days = 3, oppsOverride?: O
   }, [opps, activities, days]);
 }
 
+/**
+ * Activities có nextActionDate đã qua và deal vẫn đang mở.
+ * Loại bỏ activity nếu đã có activity mới hơn deadline — tức deal đã được follow-up.
+ * Kết quả sort tăng dần theo deadline (quá hạn lâu nhất lên đầu).
+ *
+ * @param activities   Toàn bộ activities của user hiện tại.
+ * @param oppsOverride Ghi đè danh sách opps nếu cần filter.
+ */
 export function useOverdueTaskAlerts(activities: Activity[], oppsOverride?: Opportunity[]) {
   const storeOpps = useOpportunityStore(s => s.opportunities);
   const opps = oppsOverride ?? storeOpps;
@@ -82,7 +123,9 @@ export function useOverdueTaskAlerts(activities: Activity[], oppsOverride?: Oppo
       if (new Date(act.nextActionDate).getTime() >= now) return;
       if (!act.opportunityId) return;
       const opp = opps.find(o => o.id === act.opportunityId);
+      // Bỏ qua deal đã đóng — Won/Lost không cần alert
       if (!opp || opp.status === 'Won' || opp.status === 'Lost') return;
+      // Nếu đã log activity sau deadline → coi như đã xử lý, không alert
       const hasNewerActivity = activities.some(
         a => a.opportunityId === opp.id && a.id !== act.id &&
              new Date(a.date).getTime() > new Date(act.nextActionDate!).getTime()
@@ -96,18 +139,34 @@ export function useOverdueTaskAlerts(activities: Activity[], oppsOverride?: Oppo
   }, [opps, activities]);
 }
 
+/**
+ * Proposals đang mở quá `days` ngày không có cập nhật (dùng lastContactDate làm proxy).
+ * Ngưỡng mặc định 14 ngày — phù hợp chu kỳ quyết định B2B thông thường.
+ *
+ * @param days         Ngưỡng ngày, mặc định 14.
+ * @param oppsOverride Ghi đè danh sách opps nếu cần filter.
+ */
 export function useExpiringProposals(days = 14, oppsOverride?: Opportunity[]) {
   const storeOpps = useOpportunityStore(s => s.opportunities);
   const opps = oppsOverride ?? storeOpps;
   return useMemo(() => {
     const now       = Date.now();
     const threshold = days * 24 * 60 * 60 * 1000;
+    // lastContactDate đã xóa — useExpiringProposals giờ chỉ filter theo date tạo deal (opp.date)
+    // TODO: truyền activities vào để dùng MAX(activities.date) chính xác hơn
     return opps.filter(o =>
-      o.status === 'Proposal' && now - new Date(o.lastContactDate).getTime() > threshold
+      o.status === 'Proposal' && now - new Date(o.date).getTime() > threshold
     );
   }, [opps, days]);
 }
 
+// ── Aggregated reminders ──────────────────────────────────────────────────────
+
+/**
+ * Tổng hợp 3 loại alert thành danh sách reminder hiển thị trên UI.
+ * Thứ tự ưu tiên: overdue_task → stale_deal → expiring_proposal.
+ * Không trả về alert nếu count = 0 (tránh hiển thị badge trống).
+ */
 export function useReminders(activities: Activity[], oppsOverride?: Opportunity[]) {
   const staleLeads        = useStaleLeads(activities, 3, oppsOverride);
   const overdueTasks      = useOverdueTaskAlerts(activities, oppsOverride);

@@ -1,162 +1,42 @@
+// src/app/leads/page.tsx — Trang Leads pipeline
+// Tab "Đang theo dõi": Lead → Qualified → Proposal → Negotiation.
+// Tab "Lưu trữ": Lost — có thể Reopen về Lead.
+
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { Plus, X, AlertTriangle, Search, RotateCcw } from 'lucide-react';
-import { useOpportunityStore } from '@/store/useOpportunityStore';
-import { useClientStore } from '@/store/useClientStore';
-import { useActivityStore } from '@/store/useActivityStore';
-import { useTaskStore } from '@/store/useTaskStore';
+import { Plus, X, AlertTriangle, Search } from 'lucide-react';
 import { formatCurrencyFull } from '@/lib/utils';
-import { computeClientTags } from '@/lib/computeClientTags';
-import type { Opportunity, OpportunityStatus } from '@/types';
-import { LeadModal, emptyLeadForm, type LeadFormState } from '@/components/leads/LeadModal';
+import { LeadModal } from '@/components/leads/LeadModal';
 import { PromoteModal } from '@/components/leads/PromoteModal';
-import { LeadCard, LostCard, daysSince } from '@/components/leads/LeadCard';
-import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
-import { useUsersStore } from '@/store/useUsersStore';
-import { OwnerFilter } from '@/components/ui/OwnerBadge';
+import { LeadCard, LostCard } from '@/components/leads/LeadCard';
+import { OwnerFilter } from '@/components/ui/OwnerFilter';
 import { AssignLeadModal } from '@/components/leads/AssignLeadModal';
+import { useLeadsPage } from './useLeadsPage';
 
 export default function LeadsPage() {
-  const currentUser = useCurrentUser();
-  const isManager   = useIsManager();
-  const canCreate   = true;
-  const canEdit     = true;
+  const {
+    leads, lostLeads, pendingClientIds, clientTagsMap,
+    staleCount, totalValue, isLoading,
+    search, setSearch,
+    tab, setTab,
+    showAdd, setShowAdd,
+    editTarget, setEditTarget,
+    promoteTarget, setPromoteTarget,
+    deleteConfirm, setDeleteConfirm,
+    sortStale, setSortStale,
+    assignTarget, setAssignTarget,
+    ownerFilter, setOwnerFilter,
+    handleAdd, handleEdit, handlePromote, handleReopen,
+    deleteOpportunity, updateStatus, fetchClients,
+    assignLead, fetchOpportunities,
+    currentUser, isManager,
+    emptyLeadForm,
+    clients,
+    lastContactByClient,
+  } = useLeadsPage();
 
-  const { opportunities, fetchOpportunities, isLoading, updateOpportunity, updateStatus, deleteOpportunity } = useOpportunityStore();
-  const { clients, addLead, fetchClients, assignLead } = useClientStore();
-  const { fetchActivities } = useActivityStore();
-  const { tasks, fetchTasks, addTask } = useTaskStore();
-  const { fetchUsers } = useUsersStore();
-
-  const [search, setSearch]               = useState('');
-  const [tab, setTab]                     = useState<'active' | 'lost'>('active');
-  const [showAdd, setShowAdd]             = useState(false);
-  const [editTarget, setEditTarget]       = useState<Opportunity | null>(null);
-  const [promoteTarget, setPromoteTarget] = useState<Opportunity | null>(null);
-  const [deleteConfirm, setDeleteConfirm]   = useState<string | null>(null);
-  const [sortStale, setSortStale]           = useState(true);
-  const [assignTarget, setAssignTarget]     = useState<Opportunity | null>(null);
-  const [ownerFilter, setOwnerFilter]       = useState('');
-
-  useEffect(() => {
-    fetchOpportunities();
-    fetchActivities();
-    fetchClients();
-    fetchTasks();
-    fetchUsers();
-  }, [fetchOpportunities, fetchActivities, fetchClients, fetchTasks, fetchUsers]);
-
-  const ACTIVE_STATUSES = ['Lead', 'Qualified', 'Proposal', 'Negotiation'];
-
-  const leads = useMemo(() => {
-    let list = opportunities.filter(o =>
-      ACTIVE_STATUSES.includes(o.status) &&
-      clients.find(c => c.id === o.clientId)?.isProspect === true &&
-      (isManager || o.ownerId === currentUser?.id)
-    );
-    if (ownerFilter) list = list.filter(o => o.ownerId === ownerFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(o =>
-        o.clientName.toLowerCase().includes(q) || o.company.toLowerCase().includes(q)
-      );
-    }
-    if (sortStale) {
-      list = [...list].sort((a, b) =>
-        new Date(a.lastContactDate).getTime() - new Date(b.lastContactDate).getTime()
-      );
-    }
-    return list;
-  }, [opportunities, clients, isManager, currentUser, ownerFilter, search, sortStale]);
-
-  const lostLeads = useMemo(() => {
-    let list = opportunities.filter(o =>
-      o.status === 'Lost' &&
-      clients.find(c => c.id === o.clientId)?.isProspect === true &&
-      (isManager || o.ownerId === currentUser?.id)
-    );
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(o =>
-        o.clientName.toLowerCase().includes(q) || o.company.toLowerCase().includes(q)
-      );
-    }
-    return [...list].sort((a, b) =>
-      new Date(b.lastContactDate).getTime() - new Date(a.lastContactDate).getTime()
-    );
-  }, [opportunities, clients, isManager, currentUser, search]);
-
-  // Map clientId → có pending task không (dùng cho badge LeadCard)
-  const pendingClientIds = useMemo(() => {
-    const ids = new Set<string>();
-    tasks.forEach(t => { if (t.status === 'pending') ids.add(t.clientId); });
-    return ids;
-  }, [tasks]);
-
-  // Phase 12: Map clientId → computed tags
-  const clientTagsMap = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof computeClientTags>>();
-    clients.forEach(client => {
-      const clientOpps = opportunities.filter(o => o.clientId === client.id);
-      map.set(client.id, computeClientTags(client, clientOpps));
-    });
-    return map;
-  }, [clients, opportunities]);
-
-  const staleCount = useMemo(() => leads.filter(o => daysSince(o.lastContactDate) > 3).length, [leads]);
-  const totalValue = useMemo(() => leads.reduce((s, o) => s + o.value, 0), [leads]);
-
-  const handleAdd = async (form: LeadFormState) => {
-    const result = await addLead({
-      name:    form.clientName,
-      company: form.company,
-      email:   form.email,
-      value:   Number(form.value),
-      notes:   form.notes,
-    });
-
-    if (result) {
-      await fetchOpportunities();
-
-      if (form.firstTaskTitle.trim()) {
-        await addTask({
-          title:         form.firstTaskTitle.trim(),
-          clientId:      result.clientId,
-          clientName:    form.clientName,
-          company:       form.company,
-          opportunityId: result.opportunityId,
-          dueDate:       form.firstTaskDate || undefined,
-          status:        'pending',
-        });
-      }
-    }
-
-    setShowAdd(false);
-  };
-
-  const handleEdit = (form: LeadFormState) => {
-    if (!editTarget) return;
-    updateOpportunity(editTarget.id, {
-      clientName:      form.clientName,
-      company:         form.company,
-      value:           Number(form.value),
-      date:            form.date,
-      lastContactDate: form.lastContactDate,
-      notes:           form.notes,
-    });
-    setEditTarget(null);
-  };
-
-  const handlePromote = (status: OpportunityStatus) => {
-    if (!promoteTarget) return;
-    updateStatus(promoteTarget.id, status);
-    setPromoteTarget(null);
-  };
-
-  const handleReopen = async (id: string) => {
-    await updateStatus(id, 'Lead');
-  };
+  /** Helper: lấy client của một opp */
+  const getClient = (clientId: string) => clients.find(c => c.id === clientId);
 
   return (
     <div className="flex flex-col px-6 py-5">
@@ -166,12 +46,19 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Tiềm năng</h1>
           <p className="text-sm text-[#555] mt-0.5">
-            {tab === 'active'
-              ? <>{leads.length} lead · {formatCurrencyFull(totalValue)} tổng giá trị{staleCount > 0 && <span className="ml-2 text-[#EF4444]">· {staleCount} cần liên hệ</span>}</>
-              : <>{lostLeads.length} lead thất bại</>}
+            {tab === 'active' ? (
+              <>
+                {leads.length} lead · {formatCurrencyFull(totalValue)} tổng giá trị
+                {staleCount > 0 && (
+                  <span className="ml-2 text-[#EF4444]">· {staleCount} cần liên hệ</span>
+                )}
+              </>
+            ) : (
+              <>{lostLeads.length} lead thất bại</>
+            )}
           </p>
         </div>
-        {tab === 'active' && canCreate && (
+        {tab === 'active' && (
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 rounded-xl bg-[#DFFF00] px-4 py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors">
             <Plus size={15} /> Thêm lead
@@ -186,14 +73,18 @@ export default function LeadsPage() {
             tab === 'active' ? 'border-[#DFFF00] text-[#DFFF00]' : 'border-transparent text-[#555] hover:text-[#888]'
           }`}>
           Đang theo dõi
-          {leads.length > 0 && <span className="ml-1.5 rounded-full bg-[#1a1a1a] px-1.5 py-0.5 text-xs">{leads.length}</span>}
+          {leads.length > 0 && (
+            <span className="ml-1.5 rounded-full bg-[#1a1a1a] px-1.5 py-0.5 text-xs">{leads.length}</span>
+          )}
         </button>
         <button onClick={() => setTab('lost')}
           className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
             tab === 'lost' ? 'border-[#EF4444] text-[#EF4444]' : 'border-transparent text-[#555] hover:text-[#888]'
           }`}>
           Lưu trữ
-          {lostLeads.length > 0 && <span className="ml-1.5 rounded-full bg-[#1a1a1a] px-1.5 py-0.5 text-xs">{lostLeads.length}</span>}
+          {lostLeads.length > 0 && (
+            <span className="ml-1.5 rounded-full bg-[#1a1a1a] px-1.5 py-0.5 text-xs">{lostLeads.length}</span>
+          )}
         </button>
       </div>
 
@@ -215,17 +106,20 @@ export default function LeadsPage() {
           </div>
           <OwnerFilter value={ownerFilter} onChange={setOwnerFilter} />
         </div>
+
         {tab === 'active' && (
           <button onClick={() => setSortStale(s => !s)}
             className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-              sortStale ? 'border-[#DFFF0044] bg-[#DFFF0010] text-[#DFFF00]' : 'border-[#222] text-[#555] hover:text-[#888]'
+              sortStale
+                ? 'border-[#DFFF0044] bg-[#DFFF0010] text-[#DFFF00]'
+                : 'border-[#222] text-[#555] hover:text-[#888]'
             }`}>
             <AlertTriangle size={12} /> Ưu tiên nguội nhất
           </button>
         )}
       </div>
 
-      {/* Content */}
+      {/* Content grid */}
       {isLoading ? (
         <div className="flex flex-1 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1a1a1a] border-t-[#DFFF00]" />
@@ -244,21 +138,31 @@ export default function LeadsPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {leads.map(opp => {
                 const canEditThis = isManager || opp.ownerId === currentUser?.id;
+                const client = getClient(opp.clientId);
+                const lastContact = lastContactByClient.get(opp.clientId) ?? opp.date;
                 return (
-                <LeadCard
-                  key={opp.id}
-                  opp={opp}
-                  deleteConfirm={deleteConfirm}
-                  hasPendingTask={pendingClientIds.has(opp.clientId)}
-                  canEdit={canEditThis}
-                  computedTags={clientTagsMap.get(opp.clientId)}
-                  onPromote={canEditThis ? setPromoteTarget : undefined}
-                  onEdit={canEditThis ? setEditTarget : undefined}
-                  onAssign={isManager ? setAssignTarget : undefined}
-                  onDeleteRequest={canEditThis ? setDeleteConfirm : undefined}
-                  onDeleteConfirm={canEditThis ? async id => { await deleteOpportunity(id); fetchClients(); setDeleteConfirm(null); } : undefined}
-                  onDeleteCancel={() => setDeleteConfirm(null)}
-                />
+                  <LeadCard
+                    key={opp.id}
+                    opp={opp}
+                    clientName={client?.name ?? ''}
+                    clientCompany={client?.company ?? ''}
+                    clientAvatar={client?.avatar ?? ''}
+                    lastContact={lastContact}
+                    deleteConfirm={deleteConfirm}
+                    hasPendingTask={pendingClientIds.has(opp.clientId)}
+                    canEdit={canEditThis}
+                    computedTags={clientTagsMap.get(opp.clientId)}
+                    onPromote={canEditThis ? setPromoteTarget : undefined}
+                    onEdit={canEditThis ? setEditTarget : undefined}
+                    onAssign={isManager ? setAssignTarget : undefined}
+                    onDeleteRequest={canEditThis ? setDeleteConfirm : undefined}
+                    onDeleteConfirm={canEditThis ? async id => {
+                      // Không xóa thẳng — promote sang Lost → tự vào tab Lưu trữ
+                      await updateStatus(id, 'Lost');
+                      setDeleteConfirm(null);
+                    } : undefined}
+                    onDeleteCancel={() => setDeleteConfirm(null)}
+                  />
                 );
               })}
             </div>
@@ -276,19 +180,26 @@ export default function LeadsPage() {
         ) : (
           <div className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {lostLeads.map(opp => (
-                <LostCard
-                  key={opp.id}
-                  opp={opp}
-                  onReopen={handleReopen}
-                />
-              ))}
+              {lostLeads.map(opp => {
+                const client = getClient(opp.clientId);
+                return (
+                  <LostCard
+                    key={opp.id}
+                    opp={opp}
+                    clientName={client?.name ?? ''}
+                    clientCompany={client?.company ?? ''}
+                    clientAvatar={client?.avatar ?? ''}
+                    onReopen={handleReopen}
+                  />
+                );
+              })}
             </div>
           </div>
         )
       )}
 
-      {/* Modals */}
+      {/* ── Modals ─────────────────────────────────────────────────────────── */}
+
       {showAdd && (
         <LeadModal
           title="Thêm lead mới"
@@ -298,42 +209,64 @@ export default function LeadsPage() {
           onSave={handleAdd}
         />
       )}
-      {editTarget && (
-        <LeadModal
-          title="Chỉnh sửa lead"
-          initial={{
-            clientName:      editTarget.clientName,
-            company:         editTarget.company,
-            avatar:          editTarget.avatar,
-            email:           '',
-            value:           String(editTarget.value),
-            confidence:      String(editTarget.confidence),
-            date:            editTarget.date,
-            lastContactDate: editTarget.lastContactDate,
-            notes:           editTarget.notes ?? '',
-            status:          editTarget.status,
-            firstTaskTitle:  '',
-            firstTaskDate:   '',
-          }}
-          onClose={() => setEditTarget(null)}
-          onSave={handleEdit}
-        />
-      )}
-      {promoteTarget && (
-        <PromoteModal opp={promoteTarget}
-          onClose={() => setPromoteTarget(null)}
-          onPromote={handlePromote} />
-      )}
-      {assignTarget && (
-        <AssignLeadModal
-          opp={assignTarget}
-          onClose={() => setAssignTarget(null)}
-          onAssign={async (newOwnerId) => {
-            const ok = await assignLead(assignTarget.clientId, newOwnerId);
-            if (ok) { fetchOpportunities(); setAssignTarget(null); }
-          }}
-        />
-      )}
+
+      {editTarget && (() => {
+        const client = getClient(editTarget.clientId);
+        return (
+          <LeadModal
+            title="Chỉnh sửa deal"
+            initial={{
+              clientName: client?.name     ?? '',
+              company:    client?.company  ?? '',
+              avatar:     client?.avatar   ?? '',
+              email:      '',
+              industry:   client?.industry ?? 'Technology',
+              title:      editTarget.title,
+              value:      String(editTarget.value),
+              confidence: String(editTarget.confidence),
+              date:       editTarget.date,
+              notes:      editTarget.notes ?? '',
+              status:     editTarget.status,
+              firstTaskTitle: '',
+              firstTaskDate:  '',
+            }}
+            onClose={() => setEditTarget(null)}
+            onSave={handleEdit}
+          />
+        );
+      })()}
+
+      {promoteTarget && (() => {
+        const client = getClient(promoteTarget.clientId);
+        return (
+          <PromoteModal
+            opp={promoteTarget}
+            clientName={client?.name ?? ''}
+            clientCompany={client?.company ?? ''}
+            onClose={() => setPromoteTarget(null)}
+            onPromote={handlePromote}
+          />
+        );
+      })()}
+
+      {assignTarget && (() => {
+        const client = getClient(assignTarget.clientId);
+        return (
+          <AssignLeadModal
+            opp={assignTarget}
+            clientName={client?.name ?? ''}
+            clientCompany={client?.company ?? ''}
+            onClose={() => setAssignTarget(null)}
+            onAssign={async (newOwnerId) => {
+              const ok = await assignLead(assignTarget.clientId, newOwnerId);
+              if (ok) {
+                fetchOpportunities();
+                setAssignTarget(null);
+              }
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

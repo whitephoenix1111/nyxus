@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     const newDoc: Document = {
       ...body,
       id:         `doc-${crypto.randomUUID().slice(0, 8)}`,
-      ownerId:    body.ownerId ?? session.id,
+      uploadedBy: session.id,  // luôn dùng session.id — không cho override từ body
       url:        null,
       starred:    body.starred ?? false,
       uploadedAt: new Date().toISOString(),

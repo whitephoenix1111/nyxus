@@ -7,9 +7,9 @@ import KPISummary from '@/components/dashboard/KPISummary';
 import ReminderCard from '@/components/dashboard/ReminderCard';
 import ClientCard from '@/components/dashboard/ClientCard';
 import TeamLeaderboard from '@/components/dashboard/TeamLeaderboard';
-import { OwnerFilter } from '@/components/ui/OwnerBadge';
+import { OwnerFilter } from '@/components/ui/OwnerFilter';
 import { useMonthlyChartData, useAverageValue, useReminders } from '@/store/opportunitySelectors';
-import type { Activity, Opportunity, OpportunityStatus, Task } from '@/types';
+import type { Activity, Client, Opportunity, OpportunityStatus, Task } from '@/types';
 
 const REMINDER_ACCENT: Record<string, string> = {
   overdue_task:      '#EF4444',
@@ -27,14 +27,16 @@ function useOppStats(opps: Opportunity[]) {
 }
 
 interface ManagerDashboardProps {
-  opportunities: Opportunity[];
-  activities: Activity[];
-  tasks: Task[];
-  ownerFilter: string;
+  opportunities:      Opportunity[];
+  activities:         Activity[];
+  tasks:              Task[];
+  clients:            Client[];
+  ownerFilter:        string;
   onOwnerFilterChange: (v: string) => void;
 }
 
-export function ManagerDashboard({ opportunities, activities, tasks, ownerFilter, onOwnerFilterChange }: ManagerDashboardProps) {
+export function ManagerDashboard({ opportunities, activities, tasks, clients, ownerFilter, onOwnerFilterChange }: ManagerDashboardProps) {
+  const clientMap = useMemo(() => new Map(clients.map(c => [c.id, c])), [clients]);
   const filteredOpps = useMemo(
     () => ownerFilter ? opportunities.filter(o => o.ownerId === ownerFilter) : opportunities,
     [opportunities, ownerFilter]
@@ -110,7 +112,9 @@ export function ManagerDashboard({ opportunities, activities, tasks, ownerFilter
         <div>
           <h2 className="text-xl font-bold text-white mb-3">Top 25 Khách hàng</h2>
           <div className="grid grid-cols-1 gap-2">
-            {topClients.map(opp => <ClientCard key={opp.id} opportunity={opp} />)}
+            {topClients.map(opp => (
+              <ClientCard key={opp.id} opportunity={opp} client={clientMap.get(opp.clientId)} />
+            ))}
           </div>
         </div>
       </aside>

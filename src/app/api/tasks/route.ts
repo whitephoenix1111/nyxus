@@ -40,13 +40,24 @@ export async function GET(request: Request) {
 }
 
 // POST /api/tasks
+// Side effect: nếu caller là salesperson và body không truyền assignedTo,
+// tự động set assignedTo = session.id — task của sales luôn có chủ rõ ràng.
+// Manager tạo task: dùng assignedTo từ body (có thể undefined nếu không chọn).
 export async function POST(request: Request) {
   try {
-    await requireRole(['salesperson', 'manager']);
-    const body = await request.json();
+    const session = await requireRole(['salesperson', 'manager']);
+    const body    = await request.json();
+
+    // Auto-assign cho salesperson: đảm bảo task luôn có assignedTo
+    // dù form không gửi field này (sales không thấy field assignedTo trong UI).
+    // Manager giữ nguyên giá trị từ body — có thể có hoặc không.
+    const assignedTo = session.role === 'salesperson'
+      ? (body.assignedTo ?? session.id)
+      : (body.assignedTo ?? undefined);
 
     const newTask: Task = {
       ...body,
+      assignedTo,
       id:        `tsk-${crypto.randomUUID().slice(0, 8)}`,
       status:    body.status ?? 'pending',
       createdAt: new Date().toISOString().split('T')[0],

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useActivityStore } from '@/store/useActivityStore';
 import { useTaskStore } from '@/store/useTaskStore';
+import { useClientStore } from '@/store/useClientStore';
 import { useIsManager, useCurrentUser } from '@/store/useAuthStore';
 import { useUsersStore } from '@/store/useUsersStore';
 import { ManagerDashboard } from '@/components/dashboard/ManagerDashboard';
@@ -13,6 +14,7 @@ export default function DashboardPage() {
   const { opportunities, fetchOpportunities, isLoading } = useOpportunityStore();
   const { activities, fetchActivities } = useActivityStore();
   const { tasks, fetchTasks, toggleDone } = useTaskStore();
+  const { clients, fetchClients } = useClientStore();
   const isManager   = useIsManager();
   const currentUser = useCurrentUser();
   const { fetchUsers } = useUsersStore();
@@ -23,8 +25,9 @@ export default function DashboardPage() {
     fetchOpportunities();
     fetchActivities();
     fetchTasks();
+    fetchClients();
     if (isManager) fetchUsers();
-  }, [fetchOpportunities, fetchActivities, fetchTasks, fetchUsers, isManager]);
+  }, [fetchOpportunities, fetchActivities, fetchTasks, fetchClients, fetchUsers, isManager]);
 
   if (isLoading) {
     return (
@@ -43,6 +46,7 @@ export default function DashboardPage() {
         opportunities={opportunities}
         activities={activities}
         tasks={tasks}
+        clients={clients}
         ownerFilter={ownerFilter}
         onOwnerFilterChange={setOwnerFilter}
       />
@@ -54,6 +58,7 @@ export default function DashboardPage() {
       opportunities={opportunities}
       activities={activities}
       tasks={tasks}
+      clients={clients}
       currentUserId={currentUser?.id ?? ''}
       onToggleTask={toggleDone}
     />

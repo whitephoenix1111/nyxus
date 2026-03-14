@@ -1,4 +1,4 @@
-import type { Activity as ActivityType, ActivityType as AType, ActivityOutcome } from '@/types';
+import type { Activity as ActivityType, ActivityType as AType } from '@/types';
 import { useActivitiesByOutcome } from '@/store/useActivityStore';
 import { OUTCOME_CONFIG, ALL_OUTCOMES } from './constants';
 

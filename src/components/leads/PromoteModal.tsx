@@ -1,3 +1,15 @@
+// src/components/leads/PromoteModal.tsx — Modal chuyển stage cho một opportunity
+//
+// Flow:
+//   Qualified / Proposal / Negotiation → onPromote() ngay, đóng modal.
+//   Won / Lost → mở ConfirmDialog thêm trước khi thực thi.
+//
+// Lý do double-confirm cho Won/Lost:
+//   Won: client.isProspect sẽ bị set = false → client biến mất khỏi /leads,
+//        xuất hiện ở /clients. Không undo được dễ dàng.
+//   Lost: deal bị đóng vĩnh viễn. Khó rollback nếu nhấn nhầm.
+//   Các stage khác (Qualified→Proposal→Negotiation) có thể thăng/giáng tự do,
+//   nên không cần confirm thêm.
 'use client';
 
 import { useState } from 'react';
@@ -15,15 +27,18 @@ const PROMOTE_VARIANT: Partial<Record<OpportunityStatus, 'danger' | 'warning' | 
   Lost: 'danger',
 };
 
-export function PromoteModal({ opp, onClose, onPromote }: {
+export function PromoteModal({ opp, clientName, clientCompany, onClose, onPromote }: {
   opp: Opportunity;
+  clientName:    string;
+  clientCompany: string;
   onClose: () => void;
   onPromote: (s: OpportunityStatus) => void;
 }) {
+  // pendingStage: stage đang chờ xác nhận (chỉ Won/Lost); null = không có confirm đang mở
   const [pendingStage, setPendingStage] = useState<OpportunityStatus | null>(null);
 
   const handleSelect = (s: OpportunityStatus) => {
-    // Won và Lost cần confirm thêm vì không thể undo dễ
+    // Won và Lost cần confirm thêm vì action không thể undo dễ (xem file header)
     if (s === 'Won' || s === 'Lost') {
       setPendingStage(s);
     } else {
@@ -45,7 +60,7 @@ export function PromoteModal({ opp, onClose, onPromote }: {
           </div>
 
           <p className="text-sm text-[#888] mb-5">
-            <span className="text-white font-medium">{opp.clientName}</span> · {opp.company}
+            <span className="text-white font-medium">{clientName}</span> · {clientCompany}
           </p>
 
           <div className="flex flex-col gap-2">
@@ -61,6 +76,9 @@ export function PromoteModal({ opp, onClose, onPromote }: {
                     color:       isLost ? '#f87171' : isWon ? '#4ade80' : 'white',
                     background:  'transparent',
                   }}
+                  // Dùng inline style cho hover thay vì Tailwind vì màu hover phụ thuộc
+                  // vào từng stage (Lost = đỏ, Won/khác = brand yellow) — không thể
+                  // encode logic này trong class tĩnh mà không dùng arbitrary values.
                   onMouseEnter={e => {
                     const el = e.currentTarget;
                     el.style.borderColor = isLost ? '#ef4444' : '#DFFF00';
@@ -81,14 +99,14 @@ export function PromoteModal({ opp, onClose, onPromote }: {
         </div>
       </div>
 
-      {/* Confirm cho Won / Lost */}
+      {/* Confirm bổ sung cho Won / Lost — render chồng lên modal chính */}
       {pendingStage && (
         <ConfirmDialog
           title={pendingStage === 'Won' ? 'Xác nhận chốt đơn' : 'Xác nhận thất bại'}
           description={
             pendingStage === 'Won'
-              ? `Chuyển "${opp.clientName}" sang Won? Deal sẽ chốt và khách hàng sẽ chuyển sang danh sách Khách hàng.`
-              : `Đánh dấu deal "${opp.clientName}" là thất bại? Hành động này khó có thể hoàn tác.`
+              ? `Chuyển "${clientName}" sang Won? Deal sẽ chốt và khách hàng sẽ chuyển sang danh sách Khách hàng.`
+              : `Đánh dấu deal "${clientName}" là thất bại? Hành động này khó có thể hoàn tác.`
           }
           confirmLabel={pendingStage === 'Won' ? 'Chốt đơn' : 'Xác nhận thất bại'}
           variant={PROMOTE_VARIANT[pendingStage] ?? 'info'}

@@ -1,10 +1,22 @@
+// src/components/tasks/TaskModal.tsx — Modal tạo task thủ công
+//
+// Phân biệt với task được tạo tự động:
+// - Task thủ công (modal này): user chủ động tạo, `createdFrom` = undefined
+// - Task tự động: tạo từ `nextAction` khi log Activity, `createdFrom = activityId`
+//   (xem AddActivityModal — step 2: confirm tạo Task follow-up)
+//
+// Modal này dùng duy nhất cho luồng tạo thủ công từ /tasks page.
+
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { X, Plus, CheckSquare, Search, ChevronDown } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X, Plus, CheckSquare } from 'lucide-react';
 import type { Task } from '@/types';
-import { useClientStore } from '@/store/useClientStore';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
+import { useUsersStore } from '@/store/useUsersStore';
+import { ClientCombobox } from '@/components/ui/ClientCombobox';
+
+// ── Field wrapper ─────────────────────────────────────────────────────────────
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -19,114 +31,53 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-function ClientCombobox({ value, onChange, error, allowedClientIds }: {
-  value: string;
-  onChange: (id: string, name: string, company: string) => void;
-  error?: string;
-  allowedClientIds?: Set<string>; // undefined = Manager, thấy tất cả
-}) {
-  const allClients   = useClientStore(s => s.clients);
-  // Sales chỉ thấy client của mình; Manager thấy tất cả
-  const clients      = useMemo(() =>
-    allowedClientIds
-      ? allClients.filter(c => allowedClientIds.has(c.id))
-      : allClients,
-    [allClients, allowedClientIds]
-  );
-  const [query, setQuery] = useState('');
-  const [open,  setOpen]  = useState(false);
-  const ref              = useRef<HTMLDivElement>(null);
-  const selected         = clients.find(c => c.id === value);
-
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return clients.slice(0, 10);
-    return clients.filter(c =>
-      c.name.toLowerCase().includes(q) || c.company.toLowerCase().includes(q)
-    ).slice(0, 10);
-  }, [clients, query]);
-
-  useEffect(() => {
-    function h(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery(''); }
-    }
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => { setOpen(o => !o); setQuery(''); }}
-        className="input-base w-full flex items-center justify-between gap-2 text-left"
-        style={{ color: selected ? 'var(--color-text-primary)' : 'var(--color-text-disabled)',
-                 borderColor: error ? 'var(--color-danger)' : undefined }}>
-        <span className="truncate text-sm">
-          {selected ? `${selected.name} — ${selected.company}` : 'Chọn khách hàng...'}
-        </span>
-        <ChevronDown size={13} style={{ flexShrink: 0, color: 'var(--color-text-faint)' }} />
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl shadow-xl overflow-hidden"
-          style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
-          <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
-            <Search size={12} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
-            <input autoFocus className="flex-1 bg-transparent text-sm outline-none"
-              style={{ color: 'var(--color-text-primary)' }}
-              placeholder="Tìm tên hoặc công ty..."
-              value={query} onChange={e => setQuery(e.target.value)} />
-          </div>
-          <div className="max-h-44 overflow-y-auto">
-            {filtered.length === 0
-              ? <p className="px-3 py-3 text-xs text-center" style={{ color: 'var(--color-text-faint)' }}>Không tìm thấy</p>
-              : filtered.map(c => (
-                <button key={c.id} type="button"
-                  onClick={() => { onChange(c.id, c.name, c.company); setOpen(false); setQuery(''); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/5"
-                  style={{ background: c.id === value ? 'var(--color-brand-muted)' : undefined }}>
-                  <div className="h-6 w-6 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0"
-                    style={{ background: 'var(--color-surface)', color: 'var(--color-brand)' }}>
-                    {c.avatar || c.name[0]}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>{c.name}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--color-text-faint)' }}>{c.company}</p>
-                  </div>
-                </button>
-              ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main Modal ────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const EMPTY: Omit<Task, 'id' | 'createdAt'> = {
-  title:        '',
-  clientId:     '',
-  clientName:   '',
-  company:      '',
+  title:         '',
+  clientId:      '',
   opportunityId: undefined,
-  dueDate:      '',
-  status:       'pending',
-  assignedTo:   '',
-  notes:        '',
+  dueDate:       '',
+  status:        'pending',
+  assignedTo:    undefined,
+  notes:         '',
 };
 
-export function TaskModal({ onClose, onSave, allowedClientIds }: {
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+/**
+ * @param onClose          Gọi khi Hủy, X, hoặc click backdrop
+ * @param onSave           Async callback nhận payload task — caller gọi store.addTask
+ * @param allowedClientIds Set clientId user được phép tạo task cho (undefined = manager, không giới hạn)
+ * @param showAssignedTo   false khi caller là salesperson — field không có ý nghĩa vì
+ *                         sales chỉ thấy client của mình, người được giao khác sẽ không
+ *                         thấy task trên giao diện của họ (filter theo client.ownerId).
+ *                         true (default) = manager — có thể giao cho bất kỳ salesperson nào.
+ */
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function TaskModal({ onClose, onSave, allowedClientIds, showAssignedTo = true }: {
   onClose: () => void;
   onSave:  (data: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
-  allowedClientIds?: Set<string>; // undefined = Manager
+  allowedClientIds?: Set<string>;
+  showAssignedTo?: boolean;
 }) {
-  const opportunities = useOpportunityStore(s => s.opportunities);
+  const opportunities  = useOpportunityStore(s => s.opportunities);
+  const users          = useUsersStore(s => s.users);
+  const salespersons   = useMemo(() => users.filter(u => u.role === 'salesperson'), [users]);
+
   const [form, setForm]     = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 
   const clientOpps = useMemo(() =>
     form.clientId
-      ? opportunities.filter(o => o.clientId === form.clientId && o.status !== 'Won' && o.status !== 'Lost')
+      ? opportunities.filter(o =>
+          o.clientId === form.clientId &&
+          o.status !== 'Won' &&
+          o.status !== 'Lost'
+        )
       : [],
     [opportunities, form.clientId]
   );
@@ -151,8 +102,10 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
       ...form,
       title:         form.title.trim(),
       opportunityId: form.opportunityId || undefined,
-      dueDate:       form.dueDate || undefined,
-      assignedTo:    form.assignedTo?.trim() || undefined,
+      dueDate:       form.dueDate       || undefined,
+      // assignedTo chỉ gửi lên khi field được hiển thị (manager).
+      // Sales không thấy field này → luôn undefined, server không set assignedTo.
+      assignedTo:    showAssignedTo ? (form.assignedTo || undefined) : undefined,
       notes:         form.notes?.trim() || undefined,
     });
     setSaving(false);
@@ -166,7 +119,7 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
         <div className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           style={{ background: 'var(--color-neutral-50)', border: '1px solid var(--color-border-hover)' }}>
 
-          {/* Header */}
+          {/* ── Header ──────────────────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-6 py-4 shrink-0"
             style={{ borderBottom: '1px solid var(--color-border)' }}>
             <div className="flex items-center gap-3">
@@ -185,8 +138,9 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
             </button>
           </div>
 
-          {/* Body */}
+          {/* ── Body ────────────────────────────────────────────────────────── */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
             <Field label="Tiêu đề *" error={errors.title}>
               <input className="input-base w-full" placeholder="Việc cần làm..."
                 value={form.title} onChange={e => setField('title', e.target.value)} />
@@ -197,8 +151,8 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
                 value={form.clientId}
                 error={errors.clientId}
                 allowedClientIds={allowedClientIds}
-                onChange={(id, name, company) => {
-                  setForm(f => ({ ...f, clientId: id, clientName: name, company, opportunityId: undefined }));
+                onChange={(id) => {
+                  setForm(f => ({ ...f, clientId: id, opportunityId: undefined }));
                   if (errors.clientId) setErrors(e => ({ ...e, clientId: '' }));
                 }}
               />
@@ -212,7 +166,7 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
                   <option value="">— Không gắn —</option>
                   {clientOpps.map(o => (
                     <option key={o.id} value={o.id}>
-                      {o.status} · {o.value.toLocaleString('vi-VN')}đ
+                      {o.title} · {o.status}
                     </option>
                   ))}
                 </select>
@@ -224,6 +178,22 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
                 value={form.dueDate ?? ''} onChange={e => setField('dueDate', e.target.value)} />
             </Field>
 
+            {/* Chỉ hiện khi showAssignedTo=true (manager).
+                Sales không thấy field này vì task của client mình tạo ra luôn thuộc về mình —
+                giao cho người khác không có tác dụng vì filter hiển thị theo client.ownerId. */}
+            {showAssignedTo && (
+              <Field label="Giao cho">
+                <select className="select-base w-full"
+                  value={form.assignedTo ?? ''}
+                  onChange={e => setField('assignedTo', e.target.value)}>
+                  <option value="">— Không giao —</option>
+                  {salespersons.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
             <Field label="Ghi chú">
               <textarea className="input-base w-full resize-none" rows={3}
                 placeholder="Thông tin bổ sung..."
@@ -231,7 +201,7 @@ export function TaskModal({ onClose, onSave, allowedClientIds }: {
             </Field>
           </div>
 
-          {/* Footer */}
+          {/* ── Footer ──────────────────────────────────────────────────────── */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
             style={{ borderTop: '1px solid var(--color-border)' }}>
             <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Hủy</button>

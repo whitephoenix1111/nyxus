@@ -8,7 +8,7 @@ import { STAGE_DEFAULT_CONFIDENCE } from '@/types';
 // Dành cho khách hàng đã hợp tác trước đây — không qua pipeline Lead
 // Body: { name, company, email?, phone?, industry?, country?, website?, notes?, tags?, value, contractDate? }
 // Returns: { client: Client, opportunity: Opportunity }
-// Side effects: tạo Client (isProspect: false) + Opportunity (Won, confidence: 100%)
+// Side effects: tạo Client + Opportunity (Won, confidence: 100%)
 
 export async function POST(request: Request) {
   try {
@@ -17,13 +17,13 @@ export async function POST(request: Request) {
     const {
       name,
       company,
-      email = '',
-      phone = '',
-      industry = 'Unknown',
-      country = '',
-      website = '',
-      notes = '',
-      tags = [],
+      email       = '',
+      phone       = '',
+      industry    = 'Unknown',
+      country     = '',
+      website     = '',
+      notes       = '',
+      tags        = [],
       value,
       contractDate,
     } = body;
@@ -45,10 +45,10 @@ export async function POST(request: Request) {
       .map((w: string) => w[0].toUpperCase())
       .join('');
 
-    // Client đã Won — isProspect: false ngay từ đầu
+    // Client import — không có isProspect
     const newClient: Client = {
-      id:         clientId,
-      ownerId:    session.id,
+      id:       clientId,
+      ownerId:  session.id,
       name,
       company,
       avatar,
@@ -59,25 +59,22 @@ export async function POST(request: Request) {
       website,
       tags,
       notes,
-      isProspect: false,
-      createdAt:  today,
+      createdAt: today,
     };
 
     // Opportunity Won — confidence cố định 100%, không qua pipeline
+    // statusHistory rỗng: import không có lịch sử promote
     const newOpportunity: Opportunity = {
-      id:              oppId,
-      ownerId:         session.id,
+      id:         oppId,
+      ownerId:    session.id,
       clientId,
-      clientName:      name,
-      company,
-      avatar,
-      value:           Number(value),
-      status:          'Won',
-      date:            contractDate || today,
-      lastContactDate: today,
-      confidence:      STAGE_DEFAULT_CONFIDENCE['Won'], // 100
+      title:      body.title || `Import — ${company}`,
+      value:      Number(value),
+      status:     'Won',
+      date:       contractDate || today,
+      confidence: STAGE_DEFAULT_CONFIDENCE['Won'], // 100
       notes,
-      statusHistory:   [], // không có lịch sử promote — đây là import
+      statusHistory: [],
     };
 
     const [clients, opportunities] = await Promise.all([

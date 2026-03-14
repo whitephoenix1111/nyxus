@@ -1,3 +1,6 @@
+// src/app/activities/page.tsx — Trang hoạt động
+// Data đến từ store đã được bootstrap bởi DataProvider — không tự fetch khi mount.
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -5,6 +8,7 @@ import { Plus, Search, X, ChevronDown } from 'lucide-react';
 import { useActivityStore } from '@/store/useActivityStore';
 import { useClientStore } from '@/store/useClientStore';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
+import { useDataStore } from '@/store/useDataStore';
 import { useCurrentUser, useIsManager } from '@/store/useAuthStore';
 import type { ActivityType as AType, ActivityOutcome } from '@/types';
 import { TYPE_CONFIG, OUTCOME_CONFIG, ALL_TYPES, ALL_OUTCOMES, groupByDate } from '@/components/activities/constants';
@@ -17,8 +21,15 @@ export default function ActivitiesPage() {
   const { activities, isLoading, fetchActivities, deleteActivity, addActivity } = useActivityStore();
   const { clients, fetchClients }   = useClientStore();
   const { fetchOpportunities }      = useOpportunityStore();
+  const { bootstrapped, invalidate } = useDataStore();
   const currentUser = useCurrentUser();
   const isManager   = useIsManager();
+
+  // clientMap để join clientName, company, ownerId khi render ActivityCard
+  const clientMap = useMemo(
+    () => new Map(clients.map(c => [c.id, c])),
+    [clients]
+  );
 
   const ownerClientIds = useMemo(() => {
     if (isManager) return null;
@@ -33,11 +44,13 @@ export default function ActivitiesPage() {
   const [typeOpen,      setTypeOpen]      = useState(false);
   const [outcomeOpen,   setOutcomeOpen]   = useState(false);
 
+  // Chỉ fetch khi DataProvider chưa bootstrap
   useEffect(() => {
+    if (bootstrapped) return;
     fetchActivities();
     fetchClients();
     fetchOpportunities();
-  }, [fetchActivities, fetchClients, fetchOpportunities]);
+  }, [bootstrapped, fetchActivities, fetchClients, fetchOpportunities]);
 
   const visibleActivities = useMemo(() => {
     if (!ownerClientIds) return activities;
@@ -47,15 +60,17 @@ export default function ActivitiesPage() {
   const filtered = useMemo(() => {
     let list = visibleActivities;
     const q = search.trim().toLowerCase();
-    if (q) list = list.filter(a =>
-      a.title.toLowerCase().includes(q) ||
-      a.clientName.toLowerCase().includes(q) ||
-      a.company.toLowerCase().includes(q)
-    );
+    if (q) {
+      list = list.filter(a => {
+        if (a.title.toLowerCase().includes(q)) return true;
+        const c = clientMap.get(a.clientId);
+        return c?.name.toLowerCase().includes(q) || c?.company.toLowerCase().includes(q);
+      });
+    }
     if (typeFilter)    list = list.filter(a => a.type === typeFilter);
     if (outcomeFilter) list = list.filter(a => a.outcome === outcomeFilter);
     return list;
-  }, [visibleActivities, search, typeFilter, outcomeFilter]);
+  }, [visibleActivities, clientMap, search, typeFilter, outcomeFilter]);
 
   const grouped    = useMemo(() => groupByDate(filtered as Parameters<typeof groupByDate>[0]), [filtered]);
   const hasFilter  = !!(search || typeFilter || outcomeFilter);
@@ -63,8 +78,6 @@ export default function ActivitiesPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
-
-      {/* Mobile tab switcher */}
       <div className="md:hidden flex items-center gap-1 px-4 pt-3 pb-0 shrink-0">
         {(['activities', 'tasks'] as const).map(t => (
           <button key={t} onClick={() => setMobileTab(t)}
@@ -79,8 +92,6 @@ export default function ActivitiesPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-
-        {/* Left: Activity timeline */}
         <div className={`flex flex-col flex-1 min-w-0 px-6 py-5 overflow-hidden
           ${mobileTab === 'tasks' ? 'hidden md:flex' : 'flex'}`}>
 
@@ -99,9 +110,7 @@ export default function ActivitiesPage() {
 
           {!isLoading && <KpiBar activities={visibleActivities} />}
 
-          {/* Filters */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {/* Search */}
             <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-xs rounded-xl px-3 py-2"
               style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
               <Search size={13} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
@@ -118,7 +127,6 @@ export default function ActivitiesPage() {
               )}
             </div>
 
-            {/* Type filter */}
             <div className="relative">
               <button
                 onClick={() => { setTypeOpen(o => !o); setOutcomeOpen(false); }}
@@ -156,7 +164,6 @@ export default function ActivitiesPage() {
               )}
             </div>
 
-            {/* Outcome filter */}
             <div className="relative">
               <button
                 onClick={() => { setOutcomeOpen(o => !o); setTypeOpen(false); }}
@@ -206,7 +213,6 @@ export default function ActivitiesPage() {
             </span>
           </div>
 
-          {/* Timeline */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex h-48 items-center justify-center">
@@ -241,9 +247,23 @@ export default function ActivitiesPage() {
                       <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
                     </div>
                     <div className="space-y-2">
-                      {(items as Parameters<typeof ActivityCard>[0]['activity'][]).map(activity => (
-                        <ActivityCard key={activity.id} activity={activity} onDelete={deleteActivity} />
-                      ))}
+                      {(items as Parameters<typeof ActivityCard>[0]['activity'][]).map(activity => {
+                        // Join client để truyền clientName, company, ownerId cho ActivityCard
+                        const client = clientMap.get(activity.clientId);
+                        return (
+                          <ActivityCard
+                            key={activity.id}
+                            activity={activity}
+                            clientName={client?.name ?? '—'}
+                            clientCompany={client?.company ?? ''}
+                            clientOwnerId={client?.ownerId ?? ''}
+                            onDelete={async (id) => {
+                              await deleteActivity(id);
+                              await invalidate(['activities']);
+                            }}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -252,7 +272,6 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Right: Task panel */}
         <div className={`w-full md:w-[340px] lg:w-[380px] shrink-0 overflow-hidden
           ${mobileTab === 'activities' ? 'hidden md:flex md:flex-col' : 'flex flex-col'}`}>
           <TaskPanel ownerClientIds={ownerClientIds} />
@@ -260,7 +279,16 @@ export default function ActivitiesPage() {
       </div>
 
       {showModal && (
-        <AddActivityModal onClose={() => setShowModal(false)} onSave={addActivity} />
+        <AddActivityModal
+          onClose={() => setShowModal(false)}
+          onSave={async (data) => {
+            const result = await addActivity(data);
+            if (result) await invalidate(['activities', 'opportunities']);
+            return result;
+          }}
+          allowedClientIds={ownerClientIds ?? undefined}
+          showAssignedTo={isManager}
+        />
       )}
     </div>
   );

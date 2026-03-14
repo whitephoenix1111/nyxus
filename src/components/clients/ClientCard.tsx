@@ -10,9 +10,10 @@ import { MANUAL_TAGS } from './_constants';
 interface ClientCardProps {
   client: ClientWithStats;
   onClick: () => void;
+  archived?: boolean;
 }
 
-export function ClientCard({ client, onClick }: ClientCardProps) {
+export function ClientCard({ client, onClick, archived = false }: ClientCardProps) {
   const isManager = useIsManager();
   const orderCount = client.opportunities.filter(o => o.status === 'Won').length;
 
@@ -29,7 +30,12 @@ export function ClientCard({ client, onClick }: ClientCardProps) {
   return (
     <button onClick={onClick}
       className="group w-full rounded-2xl p-4 text-left transition-all"
-      style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        opacity: archived ? 0.5 : 1,
+        filter: archived ? 'grayscale(0.4)' : 'none',
+      }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.background = 'var(--color-surface-alt)';
         (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border-hover)';

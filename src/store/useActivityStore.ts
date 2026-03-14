@@ -25,27 +25,43 @@ export const useActivityStore = create<ActivityStore>((set, get) => ({
     try {
       const res = await fetch('/api/activities');
       const data: Activity[] = await res.json();
+      console.log('[useActivityStore] fetchActivities OK, count:', data.length);
       set({ activities: data, isLoading: false });
-    } catch {
+    } catch (err) {
+      console.error('[useActivityStore] fetchActivities ERROR:', err);
       set({ error: 'Failed to fetch activities', isLoading: false });
     }
   },
 
   addActivity: async (data) => {
+    console.log('[useActivityStore] addActivity → POST /api/activities', { clientId: data.clientId });
     try {
       const res = await fetch('/api/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+
       if (!res.ok) {
+        // BUG TRACKER: Log chi tiết lỗi để biết 403 (role) hay 500 (server)
+        const errBody = await res.text();
+        console.error('[useActivityStore] addActivity FAILED — status:', res.status, '| body:', errBody);
         set({ error: 'Failed to add activity' });
         return null;
       }
+
       const newAct: Activity = await res.json();
-      set(s => ({ activities: [newAct, ...s.activities] }));
+      console.log('[useActivityStore] addActivity OK — id:', newAct.id, '| clientId:', newAct.clientId);
+
+      // Optimistic prepend — activity mới lên đầu danh sách
+      set(s => {
+        const next = [newAct, ...s.activities];
+        console.log('[useActivityStore] store updated, total:', next.length);
+        return { activities: next };
+      });
       return newAct;
-    } catch {
+    } catch (err) {
+      console.error('[useActivityStore] addActivity EXCEPTION:', err);
       set({ error: 'Failed to add activity' });
       return null;
     }
@@ -113,4 +129,25 @@ export function useActivitiesForClient(clientId: string) {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [acts, clientId]
   );
+}
+
+/**
+ * Tính ngày liên hệ gần nhất từ activities — thay thế opp.lastContactDate đã xóa.
+ * Nếu truyền opportunityId thì filter thêm theo opp — dùng trong detail panel.
+ * Nếu chỉ truyền clientId thì lấy MAX của toàn bộ activities của client.
+ * @returns ISO date string hoặc null nếu chưa có activity nào
+ */
+export function useLastContactDate(clientId: string, opportunityId?: string): string | null {
+  const acts = useActivityStore(s => s.activities);
+  return useMemo(() => {
+    const filtered = acts.filter(a =>
+      a.clientId === clientId &&
+      (opportunityId === undefined || a.opportunityId === opportunityId)
+    );
+    if (filtered.length === 0) return null;
+    return filtered.reduce((latest, a) =>
+      a.date > latest ? a.date : latest,
+      filtered[0].date
+    );
+  }, [acts, clientId, opportunityId]);
 }

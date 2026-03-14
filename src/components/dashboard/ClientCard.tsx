@@ -2,10 +2,11 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { formatCurrencyFull, getInitials } from '@/lib/utils';
-import type { Opportunity } from '@/types';
+import type { Client, Opportunity } from '@/types';
 
 interface ClientCardProps {
   opportunity: Opportunity;
+  client?: Client;
 }
 
 const AVATAR_COLORS = [
@@ -23,25 +24,26 @@ function colorForName(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-export default function ClientCard({ opportunity }: ClientCardProps) {
-  const { clientName, company, value } = opportunity;
-  const gradient = colorForName(clientName);
+export default function ClientCard({ opportunity, client }: ClientCardProps) {
+  const name     = client?.name    ?? '—';
+  const company  = client?.company ?? '—';
+  const gradient = colorForName(name);
 
   return (
     <div className="rounded-2xl bg-[#111] p-4 hover:bg-[#161616] transition-colors">
       <div className="flex items-center gap-3 mb-3">
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${gradient} text-xs font-bold text-white`}>
-          {getInitials(clientName)}
+          {client?.avatar ?? getInitials(name)}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white leading-tight truncate">{clientName}</p>
+          <p className="text-sm font-semibold text-white leading-tight truncate">{name}</p>
           <p className="text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>{company}</p>
         </div>
       </div>
       <div className="flex items-end justify-between">
         <div>
           <p className="text-base font-bold text-white tabular-nums">
-            {formatCurrencyFull(value)}
+            {formatCurrencyFull(opportunity.value)}
           </p>
           <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Tổng giá trị</p>
         </div>

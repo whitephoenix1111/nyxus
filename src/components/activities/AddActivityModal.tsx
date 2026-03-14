@@ -1,12 +1,23 @@
+// src/components/activities/AddActivityModal.tsx — Modal log activity (2 bước)
+//
+// Flow:
+//   Bước 1: User điền form activity → submit → POST /api/activities
+//   Bước 2 (chỉ khi nextAction được điền): Confirm tạo task follow-up
+//           → nếu xác nhận: POST /api/tasks với createdFrom = savedActId
+//           → nếu bỏ qua: đóng modal mà không tạo task
+//
+// showAssignedTo: false khi caller là salesperson — ẩn field "Giao cho" ở step 2.
+// API tự inject assignedTo = session.id cho salesperson (POST /api/tasks).
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, X, Activity, CheckSquare, CalendarClock, User } from 'lucide-react';
+import { Plus, X, Activity, CheckSquare } from 'lucide-react';
 import type { Activity as ActivityType, ActivityType as AType, ActivityOutcome } from '@/types';
 import { useOpportunityStore } from '@/store/useOpportunityStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { TYPE_CONFIG, OUTCOME_CONFIG, ALL_TYPES, ALL_OUTCOMES } from './constants';
-import { ClientCombobox } from './ClientCombobox';
+import { ClientCombobox } from '@/components/ui/ClientCombobox';
+import { ActivityTaskStep } from './ActivityTaskStep';
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -28,8 +39,6 @@ const EMPTY_FORM = {
   title:          '',
   date:           new Date().toISOString().split('T')[0],
   clientId:       '',
-  clientName:     '',
-  company:        '',
   opportunityId:  '',
   outcome:        'neutral' as ActivityOutcome,
   nextAction:     '',
@@ -43,9 +52,17 @@ const EMPTY_TASK = {
   assignedTo: '',
 };
 
-export function AddActivityModal({ onClose, onSave }: {
+export function AddActivityModal({ onClose, onSave, allowedClientIds, showAssignedTo = true }: {
   onClose: () => void;
   onSave: (data: Omit<ActivityType, 'id' | 'createdAt'>) => Promise<ActivityType | null>;
+  /** Set<clientId> của salesperson → giới hạn ClientCombobox. undefined = Manager. */
+  allowedClientIds?: Set<string>;
+  /**
+   * false khi caller là salesperson — ẩn field "Giao cho" ở step 2.
+   * Manager (default true) thấy dropdown chọn salesperson.
+   * Cùng logic với TaskModal.showAssignedTo.
+   */
+  showAssignedTo?: boolean;
 }) {
   const opportunities = useOpportunityStore(s => s.opportunities);
   const { addTask }   = useTaskStore();
@@ -71,8 +88,8 @@ export function AddActivityModal({ onClose, onSave }: {
     if (errors[field]) setErrors(e => ({ ...e, [field]: '' }));
   }
 
-  function handleClientChange(clientId: string, clientName: string, company: string) {
-    setForm(f => ({ ...f, clientId, clientName, company, opportunityId: '' }));
+  function handleClientChange(clientId: string, _clientName: string, _company: string) {
+    setForm(f => ({ ...f, clientId, opportunityId: '' }));
     if (errors.clientId) setErrors(e => ({ ...e, clientId: '' }));
   }
 
@@ -92,8 +109,6 @@ export function AddActivityModal({ onClose, onSave }: {
       title:          form.title.trim(),
       date:           form.date,
       clientId:       form.clientId,
-      clientName:     form.clientName,
-      company:        form.company,
       opportunityId:  form.opportunityId || undefined,
       outcome:        form.outcome,
       nextAction:     form.nextAction.trim(),
@@ -102,6 +117,7 @@ export function AddActivityModal({ onClose, onSave }: {
     });
     setSaving(false);
     if (!saved) return;
+
     if (form.nextAction.trim()) {
       setSavedActId(saved.id);
       setTaskForm({ title: form.nextAction.trim(), dueDate: form.nextActionDate, assignedTo: '' });
@@ -117,12 +133,12 @@ export function AddActivityModal({ onClose, onSave }: {
     await addTask({
       title:         taskForm.title.trim(),
       clientId:      form.clientId,
-      clientName:    form.clientName,
-      company:       form.company,
       opportunityId: form.opportunityId || undefined,
       dueDate:       taskForm.dueDate || undefined,
       status:        'pending',
-      assignedTo:    taskForm.assignedTo.trim() || undefined,
+      // assignedTo chỉ gửi khi showAssignedTo=true (manager).
+      // Sales: undefined → API tự inject session.id (POST /api/tasks).
+      assignedTo:    showAssignedTo ? (taskForm.assignedTo || undefined) : undefined,
       createdFrom:   savedActId,
     });
     setTaskSaving(false);
@@ -200,7 +216,12 @@ export function AddActivityModal({ onClose, onSave }: {
               </Field>
 
               <Field label="Khách hàng *" error={errors.clientId}>
-                <ClientCombobox value={form.clientId} onChange={handleClientChange} error={errors.clientId} />
+                <ClientCombobox
+                  value={form.clientId}
+                  onChange={handleClientChange}
+                  error={errors.clientId}
+                  allowedClientIds={allowedClientIds}
+                />
               </Field>
 
               {form.clientId && (
@@ -266,82 +287,36 @@ export function AddActivityModal({ onClose, onSave }: {
             </div>
           )}
 
-          {/* Body: Step 2 */}
+          {/* Body + Footer: Step 2 */}
           {isStep2 && (
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-              <div className="rounded-xl px-4 py-3 flex items-start gap-3"
-                style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                <CheckSquare size={15} style={{ color: '#22C55E', marginTop: 1, flexShrink: 0 }} />
-                <div>
-                  <p className="text-sm font-medium" style={{ color: '#22C55E' }}>
-                    Hoạt động đã lưu thành công
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-faint)' }}>
-                    Xác nhận hoặc chỉnh thông tin task follow-up bên dưới.
-                  </p>
-                </div>
-              </div>
-
-              <Field label="Nội dung task *" error={taskError}>
-                <input
-                  className="input-base w-full"
-                  placeholder="Mô tả việc cần làm..."
-                  value={taskForm.title}
-                  autoFocus
-                  onChange={e => { setTaskForm(f => ({ ...f, title: e.target.value })); if (taskError) setTaskError(''); }}
-                />
-              </Field>
-
-              <Field label="Ngày đến hạn">
-                <div className="relative">
-                  <CalendarClock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: 'var(--color-text-faint)' }} />
-                  <input className="input-base w-full pl-8" type="date"
-                    value={taskForm.dueDate}
-                    onChange={e => setTaskForm(f => ({ ...f, dueDate: e.target.value }))} />
-                </div>
-              </Field>
-
-              <Field label="Giao cho">
-                <div className="relative">
-                  <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: 'var(--color-text-faint)' }} />
-                  <input className="input-base w-full pl-8" placeholder="Tên người thực hiện..."
-                    value={taskForm.assignedTo}
-                    onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))} />
-                </div>
-              </Field>
-            </div>
+            <ActivityTaskStep
+              taskForm={taskForm}
+              taskError={taskError}
+              taskSaving={taskSaving}
+              showAssignedTo={showAssignedTo}
+              onChange={patch => {
+                setTaskForm(f => ({ ...f, ...patch }));
+                if (patch.title !== undefined && taskError) setTaskError('');
+              }}
+              onSkip={onClose}
+              onCreate={handleCreateTask}
+            />
           )}
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
-            style={{ borderTop: '1px solid var(--color-border)' }}>
-            {!isStep2 ? (
-              <>
-                <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Hủy</button>
-                <button onClick={handleSubmitActivity} disabled={saving}
-                  className="btn-primary flex items-center gap-2 px-4 py-2 disabled:opacity-60">
-                  {saving
-                    ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/30 border-t-black" />
-                    : <Plus size={13} />}
-                  {saving ? 'Đang lưu...' : 'Thêm hoạt động'}
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Bỏ qua</button>
-                <button onClick={handleCreateTask} disabled={taskSaving}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
-                  style={{ background: '#22C55E', color: '#000' }}>
-                  {taskSaving
-                    ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/30 border-t-black" />
-                    : <CheckSquare size={13} />}
-                  {taskSaving ? 'Đang tạo...' : 'Tạo task & đóng'}
-                </button>
-              </>
-            )}
-          </div>
+          {/* Footer: Step 1 */}
+          {!isStep2 && (
+            <div className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
+              style={{ borderTop: '1px solid var(--color-border)' }}>
+              <button onClick={onClose} className="btn-ghost text-sm px-4 py-2">Hủy</button>
+              <button onClick={handleSubmitActivity} disabled={saving}
+                className="btn-primary flex items-center gap-2 px-4 py-2 disabled:opacity-60">
+                {saving
+                  ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                  : <Plus size={13} />}
+                {saving ? 'Đang lưu...' : 'Thêm hoạt động'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>

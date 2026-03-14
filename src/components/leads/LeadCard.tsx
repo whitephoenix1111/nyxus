@@ -1,3 +1,8 @@
+// src/components/leads/LeadCard.tsx — Card hiển thị một opportunity trong pipeline Leads
+//
+// clientName, clientCompany, clientAvatar, lastContact được truyền vào từ ngoài —
+// không còn lấy từ opp.clientName / opp.lastContactDate (đã xóa khỏi schema).
+
 import { Clock, AlertTriangle, Check, X, Pencil, Trash2, UserRound, CheckCircle2 } from 'lucide-react';
 import { formatCurrencyFull } from '@/lib/utils';
 import type { ClientTag, Opportunity } from '@/types';
@@ -8,10 +13,12 @@ import { MANUAL_TAGS } from '@/components/clients/_constants';
 
 export { LostCard } from './LostCard';
 
+/** Số ngày kể từ một ngày ISO string đến hôm nay. */
 export function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
 }
 
+/** Badge màu thể hiện mức độ "tươi" của lead. */
 export function StaleTag({ days }: { days: number }) {
   if (days <= 3) return (
     <span className="inline-flex items-center gap-1 rounded-full bg-[#1a1a1a] px-2 py-0.5 text-xs text-[#22C55E]">
@@ -40,6 +47,10 @@ function Avatar({ initials }: { initials: string }) {
 
 export function LeadCard({
   opp,
+  clientName,
+  clientCompany,
+  clientAvatar,
+  lastContact,
   deleteConfirm,
   hasPendingTask,
   canEdit = true,
@@ -52,6 +63,11 @@ export function LeadCard({
   onDeleteCancel,
 }: {
   opp: Opportunity;
+  clientName:    string;
+  clientCompany: string;
+  clientAvatar:  string;
+  /** ISO date — ngày liên hệ gần nhất, tính từ activities. */
+  lastContact:   string;
   deleteConfirm: string | null;
   hasPendingTask: boolean;
   canEdit?: boolean;
@@ -64,35 +80,39 @@ export function LeadCard({
   onDeleteCancel: () => void;
 }) {
   const isManager = useIsManager();
-  const days = daysSince(opp.lastContactDate);
+  const days = daysSince(lastContact);
   const tags = computedTags ?? [];
 
   return (
     <div className="group relative flex flex-col rounded-2xl border border-[#1a1a1a] bg-[#111] p-4 hover:border-[#2a2a2a] transition-all">
 
-      {/* Top row */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Avatar initials={opp.avatar} />
+          <Avatar initials={clientAvatar || clientName} />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{opp.clientName}</p>
-            <p className="text-xs text-[#555] truncate">{opp.company}</p>
+            <p className="text-sm font-semibold text-white truncate">{clientName}</p>
+            <p className="text-xs text-[#555] truncate">{clientCompany}</p>
           </div>
         </div>
+        {/* StaleTag ẩn khi hover để nhường chỗ cho action buttons */}
         <div className="flex items-center gap-1.5 group-hover:opacity-0 transition-opacity shrink-0">
-          {isManager && <OwnerBadge ownerId={opp.ownerId} />}
           <StaleTag days={days} />
         </div>
       </div>
 
-      {/* Tags row */}
+      {/* OwnerBadge nằm ngoài div group-hover để không bị ẩn khi hover */}
+      {isManager && (
+        <div className="mt-1.5">
+          <OwnerBadge ownerId={opp.ownerId} size="md" />
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-1 mt-3 h-[46px] overflow-hidden content-start">
         {tags.slice(0, 4).map(tag => (
           <TagBadge key={tag} tag={tag} isComputed={!MANUAL_TAGS.includes(tag)} />
         ))}
       </div>
 
-      {/* Value + confidence */}
       <div className="flex items-end justify-between mt-3">
         <div>
           <p className="text-lg font-bold text-white tabular-nums">{formatCurrencyFull(opp.value)}</p>
@@ -118,7 +138,6 @@ export function LeadCard({
         <p className="text-xs text-[#555] line-clamp-2 border-t border-[#1a1a1a] pt-2 mt-3">{opp.notes}</p>
       )}
 
-      {/* Task status */}
       <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 mt-3 border ${
         hasPendingTask ? 'border-[#0d2d14] bg-[#071a0c]' : 'border-[#2a1500] bg-[#1a0e00]'
       }`}>
@@ -135,7 +154,6 @@ export function LeadCard({
         )}
       </div>
 
-      {/* Hover actions */}
       <div className="absolute right-3 top-3 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         {onAssign && (
           <button onClick={() => onAssign(opp)}

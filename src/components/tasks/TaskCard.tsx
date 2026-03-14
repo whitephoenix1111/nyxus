@@ -2,6 +2,9 @@
 
 import { CheckCircle2, Circle, Trash2, AlertTriangle, Zap, Calendar, Building2 } from 'lucide-react';
 import type { Task } from '@/types';
+import { useClientStore } from '@/store/useClientStore';
+import { useUsersStore } from '@/store/useUsersStore';
+import { useMemo } from 'react';
 
 function dueDateBadge(dueDate: string, status: Task['status']) {
   if (status === 'done') return null;
@@ -31,6 +34,13 @@ export function TaskCard({ task, onToggle, onDelete }: {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  // Join client và user từ store — task không còn lưu clientName/company/assignedTo tên trực tiếp
+  const clients = useClientStore(s => s.clients);
+  const users   = useUsersStore(s => s.users);
+
+  const client       = useMemo(() => clients.find(c => c.id === task.clientId),       [clients, task.clientId]);
+  const assignedUser = useMemo(() => users.find(u => u.id === task.assignedTo),       [users, task.assignedTo]);
+
   const done    = task.status === 'done';
   const today   = new Date().toISOString().split('T')[0];
   const overdue = !done && task.dueDate && task.dueDate < today;
@@ -48,9 +58,7 @@ export function TaskCard({ task, onToggle, onDelete }: {
         onClick={() => onToggle(task.id)}
         className="mt-0.5 shrink-0 transition-colors hover:scale-110"
         style={{ color: done ? 'var(--color-brand)' : 'var(--color-text-disabled)' }}>
-        {done
-          ? <CheckCircle2 size={16} />
-          : <Circle size={16} />}
+        {done ? <CheckCircle2 size={16} /> : <Circle size={16} />}
       </button>
 
       {/* Content */}
@@ -75,20 +83,24 @@ export function TaskCard({ task, onToggle, onDelete }: {
           </div>
         </div>
 
-        {/* Meta */}
+        {/* Meta — join từ store, không đọc field đã xóa trên task */}
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-            {task.clientName}
-          </span>
-          <span style={{ color: 'var(--color-text-disabled)', fontSize: 10 }}>·</span>
-          <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-faint)' }}>
-            <Building2 size={9} /> {task.company}
-          </span>
-          {task.assignedTo && (
+          {client && (
+            <>
+              <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                {client.name}
+              </span>
+              <span style={{ color: 'var(--color-text-disabled)', fontSize: 10 }}>·</span>
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-faint)' }}>
+                <Building2 size={9} /> {client.company}
+              </span>
+            </>
+          )}
+          {assignedUser && (
             <>
               <span style={{ color: 'var(--color-text-disabled)', fontSize: 10 }}>·</span>
               <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>
-                @{task.assignedTo}
+                {assignedUser.name}
               </span>
             </>
           )}

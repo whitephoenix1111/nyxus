@@ -2,7 +2,7 @@
 // Phiên bản Edge-safe của auth — dùng TRONG middleware.ts
 // Không import từ @/types vì alias không resolve được trong Edge runtime
 
-import { SignJWT, jwtVerify } from 'jose';
+import { jwtVerify } from 'jose';
 
 export interface SessionPayload {
   id: string;

@@ -1,5 +1,7 @@
 import { FileText, File, FileSpreadsheet, Image, Star, Trash2, Clock } from 'lucide-react';
 import type { DocType, Document } from '@/types';
+import { OwnerBadge } from '@/components/ui/OwnerBadge';
+import { useIsManager } from '@/store/useAuthStore';
 
 const TYPE_ICON: Record<DocType, React.ElementType> = {
   pdf:   FileText,
@@ -25,13 +27,20 @@ function fmtDate(iso: string) {
 
 interface DocRowProps {
   doc: Document;
+  /** Join từ clients[doc.clientId].name */
+  clientName: string;
+  /** Join từ clients[doc.clientId].company */
+  clientCompany: string;
+  /** Join từ clients[doc.clientId].ownerId — để hiện OwnerBadge cho manager */
+  clientOwnerId: string;
   onStar: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function DocRow({ doc, onStar, onDelete }: DocRowProps) {
-  const Icon  = TYPE_ICON[doc.type];
-  const color = TYPE_COLOR[doc.type];
+export function DocRow({ doc, clientName, clientCompany, clientOwnerId, onStar, onDelete }: DocRowProps) {
+  const Icon      = TYPE_ICON[doc.type];
+  const color     = TYPE_COLOR[doc.type];
+  const isManager = useIsManager();
 
   return (
     <div className="group flex items-center gap-4 px-4 py-3 border-b border-[#1a1a1a] hover:bg-[#161616] transition-colors cursor-pointer last:border-b-0">
@@ -41,10 +50,13 @@ export function DocRow({ doc, onStar, onDelete }: DocRowProps) {
         <Icon size={16} style={{ color }} />
       </div>
 
-      {/* Name + client */}
+      {/* Name + client — clientName/company join từ caller, không còn lấy từ doc (field đã xóa) */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white truncate">{doc.name}</p>
-        <p className="text-xs text-[#555] truncate">{doc.clientName} — {doc.company}</p>
+        <p className="text-xs text-[#555] truncate">
+          {clientName}
+          {clientCompany ? ` · ${clientCompany}` : ''}
+        </p>
       </div>
 
       {/* Category badge */}
@@ -57,10 +69,12 @@ export function DocRow({ doc, onStar, onDelete }: DocRowProps) {
         {doc.size}
       </span>
 
-      {/* Upload date */}
-      <div className="flex items-center gap-1 w-28 shrink-0">
+      {/* Upload date + owner (manager only) */}
+      <div className="flex items-center gap-2 w-28 shrink-0">
         <Clock size={11} className="text-[#444]" />
         <span className="text-xs text-[#555]">{fmtDate(doc.uploadedAt)}</span>
+        {/* Guard ownership qua client.ownerId — nhất quán với API layer */}
+        {isManager && <OwnerBadge ownerId={clientOwnerId} size="sm" />}
       </div>
 
       {/* Actions */}

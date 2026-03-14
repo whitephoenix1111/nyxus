@@ -1,3 +1,5 @@
+// src/components/dashboard/SalesDashboard.tsx — Dashboard cá nhân dành cho Salesperson
+
 'use client';
 
 import { useMemo } from 'react';
@@ -6,7 +8,7 @@ import ReminderCard from '@/components/dashboard/ReminderCard';
 import TodayTasksWidget from '@/components/dashboard/TodayTasksWidget';
 import StaleLeadsWidget from '@/components/dashboard/StaleLeadsWidget';
 import { useReminders } from '@/store/opportunitySelectors';
-import type { Activity, Opportunity, Task } from '@/types';
+import type { Activity, Client, Opportunity, Task } from '@/types';
 
 const REMINDER_ACCENT: Record<string, string> = {
   overdue_task:      '#EF4444',
@@ -15,30 +17,49 @@ const REMINDER_ACCENT: Record<string, string> = {
 };
 
 interface SalesDashboardProps {
-  opportunities: Opportunity[];
-  activities: Activity[];
-  tasks: Task[];
-  currentUserId: string;
-  onToggleTask: (id: string) => void;
+  opportunities:  Opportunity[];
+  activities:     Activity[];
+  tasks:          Task[];
+  clients:        Client[];
+  currentUserId:  string;
+  onToggleTask:   (id: string) => void;
 }
 
-export function SalesDashboard({ opportunities, activities, tasks, currentUserId, onToggleTask }: SalesDashboardProps) {
+export function SalesDashboard({ opportunities, activities, tasks, clients, currentUserId, onToggleTask }: SalesDashboardProps) {
+
+  // ── Scope về "của mình" ───────────────────────────────────────────────────
   const myOpps = useMemo(
     () => opportunities.filter(o => o.ownerId === currentUserId),
     [opportunities, currentUserId]
   );
+
   const myClientIds = useMemo(() => new Set(myOpps.map(o => o.clientId)), [myOpps]);
+
   const myActivities = useMemo(
     () => activities.filter(a => myClientIds.has(a.clientId)),
     [activities, myClientIds]
   );
+
   const myTasks = useMemo(
     () => tasks.filter(t => myClientIds.has(t.clientId)),
     [tasks, myClientIds]
   );
 
+  // ── lastContactByClient: MAX(activities.date) per clientId ────────────────
+  // Thay thế opp.lastContactDate đã xóa khỏi schema
+  const lastContactByClient = useMemo(() => {
+    const map = new Map<string, string>();
+    myActivities.forEach(a => {
+      const prev = map.get(a.clientId);
+      if (!prev || a.date > prev) map.set(a.clientId, a.date);
+    });
+    return map;
+  }, [myActivities]);
+
+  // ── Reminders ─────────────────────────────────────────────────────────────
   const reminders = useReminders(myActivities, myOpps);
 
+  // ── KPI stats ─────────────────────────────────────────────────────────────
   const now        = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 
@@ -46,24 +67,30 @@ export function SalesDashboard({ opportunities, activities, tasks, currentUserId
     () => myOpps.filter(o => ['Lead', 'Qualified', 'Proposal', 'Negotiation'].includes(o.status)).length,
     [myOpps]
   );
+
   const pipelineValue = useMemo(
     () => myOpps.filter(o => !['Won', 'Lost'].includes(o.status)).reduce((s, o) => s + o.value, 0),
     [myOpps]
   );
+
+  // wonThisMonth: dùng opp.date làm proxy ngày chốt (lastContactDate đã xóa)
   const wonThisMonth = useMemo(
     () => myOpps
-      .filter(o => o.status === 'Won' && o.lastContactDate >= monthStart)
+      .filter(o => o.status === 'Won' && o.date >= monthStart)
       .reduce((s, o) => s + o.value, 0),
     [myOpps, monthStart]
   );
+
   const pendingTaskCount = useMemo(
     () => myTasks.filter(t => t.status === 'pending').length,
     [myTasks]
   );
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-[calc(100vh-56px)] overflow-hidden">
-      {/* Main */}
+
+      {/* Main column */}
       <div className="flex flex-1 flex-col overflow-y-auto px-6 py-5 min-w-0">
         <h1 className="text-2xl font-bold text-white mb-5">Tổng quan của bạn</h1>
 
@@ -93,7 +120,11 @@ export function SalesDashboard({ opportunities, activities, tasks, currentUserId
           </div>
         </div>
 
-        <StaleLeadsWidget opportunities={myOpps} />
+        <StaleLeadsWidget
+          opportunities={myOpps}
+          clients={clients}
+          lastContactByClient={lastContactByClient}
+        />
       </aside>
     </div>
   );

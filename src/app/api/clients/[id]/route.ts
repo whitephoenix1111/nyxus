@@ -39,7 +39,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Forbidden: bạn không phải owner của client này' }, { status: 403 });
     }
 
-    clients[idx] = { ...clients[idx], ...body };
+    const merged = { ...clients[idx], ...body };
+    // Field nào trong body có giá trị null → xóa khỏi object (unset optional field)
+    // Dùng cho restore: PATCH { archivedAt: null } → xóa archivedAt khỏi record
+    for (const key of Object.keys(body)) {
+      if (body[key] === null) delete merged[key as keyof typeof merged];
+    }
+    clients[idx] = merged;
     await writeJSON('clients.json', clients);
 
     return NextResponse.json(clients[idx]);

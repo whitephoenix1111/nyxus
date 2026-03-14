@@ -1,5 +1,13 @@
+// src/components/clients/DetailPanel.tsx — Slide-over panel chi tiết một khách hàng
+//
+// Tabs: "Cơ hội" (DetailPanelOpps) · "Tài liệu" (DetailPanelDocs)
+//
+// Soft-delete confirm nằm ở đây thay vì dùng ConfirmDialog chung vì:
+//   1. Logic kiểm tra openOpps.length nằm ở cùng component → không cần prop drilling.
+//   2. Confirm cần hiển thị số cơ hội đang mở — context-aware, không phải generic dialog.
+//   3. Panel đã có z-index riêng, inline confirm đơn giản hơn về z-index stacking.
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Briefcase, Mail, Phone, Globe, Trash2, Pencil, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Briefcase, Mail, Phone, Globe, Trash2, Pencil, AlertTriangle, ArchiveRestore } from 'lucide-react';
 import type { ClientWithStats } from '@/types';
 import { Avatar, TagBadge } from './_atoms';
 import { viIndustry } from './_constants';
@@ -13,11 +21,12 @@ interface DetailPanelProps {
   onClose: () => void;
   onDelete?: (id: string) => void;
   onEdit?: () => void;
+  onRestore?: (id: string) => void;
 }
 
 type PanelTab = 'opps' | 'docs';
 
-export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit }: DetailPanelProps) {
+export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit, onRestore }: DetailPanelProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [activeTab,   setActiveTab]   = useState<PanelTab>('opps');
 
@@ -26,10 +35,12 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
 
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
+  // openOpps dùng để: (1) hiển thị cảnh báo trong confirm dialog, (2) quyết định có cần confirm không
   const openOpps = client.opportunities.filter(o => o.status !== 'Won' && o.status !== 'Lost');
 
   function handleDeleteClick() {
     if (!onDelete) return;
+    // Có deal đang mở → cần confirm để user biết cascade delete sẽ xảy ra
     if (openOpps.length > 0) setShowConfirm(true);
     else { onDelete(client.id); onClose(); }
   }
@@ -58,7 +69,17 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
                 <Pencil size={12} /> Sửa
               </button>
             )}
-            {canEdit && onDelete && (
+            {/* Archived: chỉ hiện nút Restore, ẩn nút Xóa */}
+            {client.archivedAt && canEdit && onRestore && (
+              <button onClick={() => { onRestore(client.id); onClose(); }}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
+                style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0a1a0a'; (e.currentTarget as HTMLElement).style.borderColor = '#22c55e66'; (e.currentTarget as HTMLElement).style.color = '#22c55e'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-surface)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-text-secondary)'; }}>
+                <ArchiveRestore size={12} /> Mở lại
+              </button>
+            )}
+            {!client.archivedAt && canEdit && onDelete && (
               <button onClick={handleDeleteClick}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer"
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}
@@ -152,7 +173,10 @@ export function DetailPanel({ client, canEdit = false, onClose, onDelete, onEdit
         </div>
       </div>
 
-      {/* Confirm soft-delete */}
+      {/* Inline confirm soft-delete — render chồng lên panel (z-60/z-70)
+          Hiển thị số openOpps để user biết hậu quả cascade trước khi xác nhận.
+          Dữ liệu bị xóa: opps chưa Won + tasks pending.
+          Dữ liệu giữ lại: activities, tasks done, opps Won (xem soft-delete spec). */}
       {showConfirm && (
         <>
           <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-[2px]" onClick={() => setShowConfirm(false)} />

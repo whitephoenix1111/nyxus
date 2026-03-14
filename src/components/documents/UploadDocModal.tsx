@@ -1,3 +1,13 @@
+// src/components/documents/UploadDocModal.tsx — Modal thêm tài liệu metadata
+//
+// Lưu ý quan trọng: hệ thống chỉ lưu metadata, không upload file binary.
+// `url: null` là intentional — placeholder cho tích hợp storage thực sau này.
+//
+// uploadedBy không set từ client — server tự inject từ session JWT khi POST.
+// Client không tự set uploadedBy để tránh giả mạo ownership.
+//
+// prefillClientId: nếu được truyền vào (từ DetailPanel), ClientSelect bị disabled
+// và không cho phép đổi client — tránh upload nhầm client.
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -9,6 +19,7 @@ import type { DocType, DocCategory } from '@/types';
 
 interface UploadDocModalProps {
   onClose: () => void;
+  /** Pre-fill và lock client nếu mở từ DetailPanel của một client cụ thể. */
   prefillClientId?: string;
   prefillClientName?: string;
   prefillCompany?: string;
@@ -44,13 +55,16 @@ export default function UploadDocModal({
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
 
+  // isPrefilled: true → ClientSelect disabled, không cho đổi client
   const isPrefilled = !!prefillClientId;
 
+  // Chỉ hiện opp của client đang chọn — bao gồm cả Won vì document có thể thuộc deal đã chốt
   const clientOpps = useMemo(
     () => opportunities.filter(o => o.clientId === clientId),
     [opportunities, clientId]
   );
 
+  // Reset opp khi đổi client để tránh oppId của client cũ còn lại
   useEffect(() => { setOppId(''); }, [clientId]);
 
   const handleClientChange = (id: string, name: string, company: string) => {
@@ -67,16 +81,14 @@ export default function UploadDocModal({
     try {
       await addDocument({
         clientId,
-        clientName,
-        company,
         opportunityId: oppId || undefined,
         name: name.trim(),
         type,
         category,
         size: size.trim() || '—',
-        url: null,
+        url: null,      // Metadata-only — không upload binary
         starred: false,
-        ownerId: '',
+        // uploadedBy không truyền từ client — server tự set từ session JWT
       });
       onClose();
     } catch {
@@ -143,6 +155,7 @@ export default function UploadDocModal({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-[#666]">Khách hàng <span className="text-red-500">*</span></label>
+            {/* disabled khi prefilled (mở từ DetailPanel) để không cho đổi client */}
             <ClientSelect value={clientId} onChange={handleClientChange} disabled={isPrefilled} />
           </div>
 
@@ -153,7 +166,7 @@ export default function UploadDocModal({
               className="w-full rounded-lg px-3 py-2.5 text-sm bg-[#111] border border-[#222] text-white outline-none focus:border-[#333] transition-colors appearance-none disabled:text-[#444] disabled:cursor-not-allowed">
               <option value="">Không gắn deal cụ thể</option>
               {clientOpps.map(o => (
-                <option key={o.id} value={o.id}>{o.status} — ${o.value.toLocaleString()}</option>
+                <option key={o.id} value={o.id}>{o.title} — {o.status}</option>
               ))}
             </select>
           </div>

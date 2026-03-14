@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronDown, Calendar, ArrowRight, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import type { Activity as ActivityType } from '@/types';
 import { TYPE_CONFIG, OUTCOME_CONFIG, formatDate, relativeDate, isOverdue } from './constants';
+import { OwnerBadge } from '@/components/ui/OwnerBadge';
+import { useIsManager } from '@/store/useAuthStore';
 
 function TypeBadge({ type }: { type: ActivityType['type'] }) {
   const c = TYPE_CONFIG[type];
@@ -30,7 +32,19 @@ function OutcomeBadge({ outcome }: { outcome: ActivityType['outcome'] }) {
 // nextActionDate badge — vàng nếu sắp đến, đỏ nếu quá hạn
 function NextActionDateBadge({ date }: { date: string }) {
   const overdue = isOverdue(date);
-  const daysLeft = Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
+
+  /**
+   * Tính số ngày còn lại / đã quá hạn so với hôm nay.
+   * Dùng useMemo thay vì gọi Date.now() trực tiếp trong render —
+   * React Strict Mode cấm gọi Date.now() trực tiếp vì là impure function
+   * (kết quả thay đổi mỗi lần gọi, gây render không ổn định).
+   * useMemo đảm bảo giá trị chỉ tính lại khi `date` prop thay đổi.
+   */
+  const daysLeft = useMemo(() => {
+    const now = new Date();
+    return Math.ceil((new Date(date).getTime() - now.getTime()) / 86400000);
+  }, [date]);
+
   return (
     <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
       style={{
@@ -46,11 +60,24 @@ function NextActionDateBadge({ date }: { date: string }) {
   );
 }
 
-export function ActivityCard({ activity, onDelete }: {
+export function ActivityCard({
+  activity,
+  clientName,
+  clientCompany,
+  clientOwnerId,
+  onDelete,
+}: {
   activity: ActivityType;
+  /** Join từ clients[activity.clientId].name — không lấy từ activity.clientName (đã xóa) */
+  clientName: string;
+  /** Join từ clients[activity.clientId].company — không lấy từ activity.company (đã xóa) */
+  clientCompany: string;
+  /** Join từ clients[activity.clientId].ownerId — để hiện OwnerBadge cho manager */
+  clientOwnerId: string;
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const isManager = useIsManager();
   const cfg  = TYPE_CONFIG[activity.type];
   const Icon = cfg.icon;
 
@@ -71,7 +98,6 @@ export function ActivityCard({ activity, onDelete }: {
             </p>
             <div className="flex items-center gap-1.5 shrink-0">
               <OutcomeBadge outcome={activity.outcome} />
-              {/* DELTA-3 bước 8: hiển thị nextActionDate badge nếu có */}
               {activity.nextActionDate && <NextActionDateBadge date={activity.nextActionDate} />}
               <button onClick={() => setExpanded(e => !e)}
                 className="rounded-lg p-1 transition-colors hover:bg-white/5"
@@ -82,9 +108,10 @@ export function ActivityCard({ activity, onDelete }: {
           </div>
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <TypeBadge type={activity.type} />
-            <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>{activity.clientName}</span>
+            {/* clientName/company join từ caller — không lấy từ activity (field đã xóa) */}
+            <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>{clientName}</span>
             <span style={{ color: 'var(--color-text-disabled)' }}>·</span>
-            <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{activity.company}</span>
+            <span className="text-xs" style={{ color: 'var(--color-text-faint)' }}>{clientCompany}</span>
             <span style={{ color: 'var(--color-text-disabled)' }}>·</span>
             <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-faint)' }}>
               <Calendar size={10} />
@@ -93,6 +120,8 @@ export function ActivityCard({ activity, onDelete }: {
                 ({relativeDate(activity.date)})
               </span>
             </span>
+            {/* Manager: hiện avatar + tên sales phụ trách — join từ client.ownerId */}
+            {isManager && <OwnerBadge ownerId={clientOwnerId} size="sm" />}
           </div>
         </div>
       </div>
@@ -114,7 +143,6 @@ export function ActivityCard({ activity, onDelete }: {
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
                   <p className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-brand)' }}>Bước tiếp theo</p>
-                  {/* DELTA-3 bước 8: hiển thị due date trong expanded */}
                   {activity.nextActionDate && (
                     <span className="text-xs font-mono" style={{ color: isOverdue(activity.nextActionDate) ? '#EF4444' : '#F5C842' }}>
                       · {new Date(activity.nextActionDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
