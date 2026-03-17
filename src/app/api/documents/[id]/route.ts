@@ -1,46 +1,41 @@
+// src/app/api/documents/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { readJSON, writeJSON } from '@/lib/json-db';
 import { requireSession } from '@/lib/session';
-import type { Document, Client } from '@/types';
+import { getDocuments, updateDocument, deleteDocument, getClientOwner } from '@/lib/queries';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+interface RouteParams { params: Promise<{ id: string }> }
 
-// Helper dùng chung: sales phụ trách client của doc, hoặc manager
-async function canMutate(doc: Document, sessionId: string, sessionRole: string) {
+// Guard: sales phụ trách client của doc, hoặc manager
+async function canMutate(clientId: string, sessionId: string, sessionRole: string): Promise<boolean> {
   if (sessionRole === 'manager') return true;
-  const clients = await readJSON<Client[]>('clients.json');
-  const client  = clients.find(c => c.id === doc.clientId);
-  return client?.ownerId === sessionId;
+  const ownerId = await getClientOwner(clientId);
+  return ownerId === sessionId;
 }
 
-// PATCH /api/documents/[id]
-// Guard: sales phụ trách client liên quan, hoặc manager
 export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     const session = await requireSession();
     const { id }  = await params;
+    const body    = await request.json();
 
-    const docs = await readJSON<Document[]>('documents.json');
-    const idx  = docs.findIndex(d => d.id === id);
-    if (idx === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    // Lấy doc để biết clientId — dùng getDocuments filter theo id không có sẵn,
+    // query thẳng qua getDocuments không filter để tìm doc
+    const all = await getDocuments();
+    const doc = all.find(d => d.id === id);
+    if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (!await canMutate(docs[idx], session.id, session.role)) {
+    if (!await canMutate(doc.clientId, session.id, session.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body    = await request.json();
-    const allowed = ['starred', 'name', 'category'] as const;
-    const patch: Partial<Document> = {};
-    for (const key of allowed) {
-      if (key in body) (patch as Record<string, unknown>)[key] = body[key];
+    // Chỉ cho phép patch các field an toàn
+    const patch: Record<string, unknown> = {};
+    for (const key of ['starred', 'name', 'category'] as const) {
+      if (key in body) patch[key] = body[key];
     }
 
-    docs[idx] = { ...docs[idx], ...patch };
-    await writeJSON('documents.json', docs);
-
-    return NextResponse.json(docs[idx]);
+    const updated = await updateDocument(id, patch);
+    return NextResponse.json(updated);
   } catch (err) {
     if (err instanceof Response) return err;
     console.error('[PATCH /api/documents/:id]', err);
@@ -48,22 +43,20 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-// DELETE /api/documents/[id]
-// Guard: sales phụ trách client liên quan, hoặc manager
 export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const session = await requireSession();
     const { id }  = await params;
 
-    const docs = await readJSON<Document[]>('documents.json');
-    const doc  = docs.find(d => d.id === id);
+    const all = await getDocuments();
+    const doc = all.find(d => d.id === id);
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (!await canMutate(doc, session.id, session.role)) {
+    if (!await canMutate(doc.clientId, session.id, session.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await writeJSON('documents.json', docs.filter(d => d.id !== id));
+    await deleteDocument(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof Response) return err;

@@ -127,24 +127,3 @@ Khôi phục các file trong `data/` từ git hoặc từ bản backup.
 | Trang Forecast | ❌ (redirect) | ✅ |
 
 ---
-
-## Tài liệu
-
-| File | Nội dung |
-|---|---|
-| `REFACTOR.md` | Kiến trúc tổng quan — đọc đầu tiên |
-| `docs/START_HERE.md` | Hướng dẫn đọc docs theo thứ tự |
-| `docs/1-vision/` | Mục tiêu sản phẩm, pipeline, workflow |
-| `docs/2-hld/` | Tech stack, data model, conventions |
-| `docs/3-lld/` | TypeScript types, API, stores, components |
-| `docs/4-features/` | Acceptance criteria từng trang |
-
----
-
-## Lưu ý khi phát triển
-
-- **Thêm tính năng mới** — đọc `REFACTOR.md` để hiểu data model và ownership rules trước
-- **Sửa API** — xem `docs/3-lld/lld-data-api.md` để không bỏ sót side effects
-- **Thêm store/selector** — xem `docs/3-lld/lld-store.md` để giữ đúng pattern (không import store chéo)
-- **Sửa UI** — xem `docs/3-lld/lld-tokens.md` để dùng đúng token, không dùng raw hex trong component
-- **Confidence** — không để nhân viên nhập tự do; luôn dùng `STAGE_DEFAULT_CONFIDENCE` khi promote

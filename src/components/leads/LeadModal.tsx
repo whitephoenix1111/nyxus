@@ -70,7 +70,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-export function LeadModal({ initial, title, onClose, onSave, showFirstTask = false, showAssignedTo = false }: {
+export function LeadModal({ initial, title, onClose, onSave, showFirstTask = false, showAssignedTo = false, isSubmitting = false }: {
   initial: LeadFormState;
   title: string;
   onClose: () => void;
@@ -78,6 +78,8 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
   showFirstTask?: boolean;
   // true khi caller là manager — hiện dropdown "Giao cho"
   showAssignedTo?: boolean;
+  // true khi đang chờ API trả về — disable button để chống double-submit
+  isSubmitting?: boolean;
 }) {
   const [form, setForm]     = useState<LeadFormState>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof LeadFormState, string>>>({});
@@ -110,6 +112,8 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
   }
 
   function handleSave() {
+    // Bỏ qua nếu đang submit — tránh double-click trong khoảng thời gian API chưa trả về
+    if (isSubmitting) return;
     setTouched({ clientName: true, company: true, title: true, value: true, email: true, ownerId: true });
     if (validate()) onSave(form);
   }
@@ -123,8 +127,8 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
 
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose}
-            className="rounded-lg p-1.5 text-[#555] hover:bg-[#1a1a1a] hover:text-white transition-colors">
+          <button onClick={onClose} disabled={isSubmitting}
+            className="rounded-lg p-1.5 text-[#555] hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:pointer-events-none">
             <X size={16} />
           </button>
         </div>
@@ -238,13 +242,13 @@ export function LeadModal({ initial, title, onClose, onSave, showFirstTask = fal
         )}
 
         <div className="flex gap-2 mt-6">
-          <button onClick={onClose}
-            className="flex-1 rounded-xl border border-[#333] py-2 text-sm text-[#888] hover:bg-[#1a1a1a] hover:text-white transition-colors">
+          <button onClick={onClose} disabled={isSubmitting}
+            className="flex-1 rounded-xl border border-[#333] py-2 text-sm text-[#888] hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-40 disabled:pointer-events-none">
             Hủy
           </button>
-          <button onClick={handleSave}
-            className="flex-1 rounded-xl bg-[#DFFF00] py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors">
-            Lưu
+          <button onClick={handleSave} disabled={isSubmitting}
+            className="flex-1 rounded-xl bg-[#DFFF00] py-2 text-sm font-semibold text-black hover:bg-[#c8e600] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            {isSubmitting ? 'Đang lưu...' : 'Lưu'}
           </button>
         </div>
       </div>

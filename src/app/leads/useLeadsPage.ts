@@ -40,6 +40,8 @@ export function useLeadsPage() {
   const [sortStale, setSortStale]         = useState(true);
   const [assignTarget, setAssignTarget]   = useState<Opportunity | null>(null);
   const [ownerFilter, setOwnerFilter]     = useState('');
+  // Guard chống double-submit: true khi đang chờ POST /api/leads trả về
+  const [isSubmitting, setIsSubmitting]   = useState(false);
 
   useEffect(() => {
     if (bootstrapped) return;
@@ -156,36 +158,44 @@ export function useLeadsPage() {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleAdd = async (form: LeadFormState) => {
-    const result = await addLead({
-      name:     form.clientName,
-      company:  form.company,
-      email:    form.email,
-      industry: form.industry,
-      value:    Number(form.value),
-      notes:    form.notes,
-      // title do user nhập — không để API fallback sinh string vô nghĩa
-      title:    form.title,
-      // Manager: ownerId là salesperson được chọn. Salesperson: '' → không truyền → API dùng session.id
-      ownerId:  form.ownerId || undefined,
-    });
+    // Guard: bỏ qua nếu đang submit — tránh double-click tạo duplicate
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    if (result) {
-      await invalidate(['clients', 'opportunities']);
+    try {
+      const result = await addLead({
+        name:     form.clientName,
+        company:  form.company,
+        email:    form.email,
+        industry: form.industry,
+        value:    Number(form.value),
+        notes:    form.notes,
+        // title do user nhập — không để API fallback sinh string vô nghĩa
+        title:    form.title,
+        // Manager: ownerId là salesperson được chọn. Salesperson: '' → không truyền → API dùng session.id
+        ownerId:  form.ownerId || undefined,
+      });
 
-      if (form.firstTaskTitle.trim()) {
+      // addLead() đã sync client + opportunity vào store ngay (addClient + addOpportunity).
+      // Không cần invalidate(['clients','opportunities']) ở đây — tránh refetch thừa.
+
+      if (result && form.firstTaskTitle.trim()) {
         await addTask({
           title: form.firstTaskTitle.trim(),
           clientId: result.clientId,
           opportunityId: result.opportunityId,
           dueDate: form.firstTaskDate || undefined,
           status: 'pending',
-          company: undefined
+          company: undefined,
         });
+        // Task chưa được sync optimistic vào store → invalidate để refetch
         await invalidate(['tasks']);
       }
-    }
 
-    setShowAdd(false);
+      if (result) setShowAdd(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (form: LeadFormState) => {
@@ -222,6 +232,7 @@ export function useLeadsPage() {
     sortStale, setSortStale,
     assignTarget, setAssignTarget,
     ownerFilter, setOwnerFilter,
+    isSubmitting,
     handleAdd, handleEdit, handlePromote, handleReopen,
     deleteOpportunity, updateStatus, fetchClients, assignLead, fetchOpportunities,
     currentUser, isManager,

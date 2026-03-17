@@ -26,6 +26,7 @@ export default function LeadsPage() {
     sortStale, setSortStale,
     assignTarget, setAssignTarget,
     ownerFilter, setOwnerFilter,
+    isSubmitting,
     handleAdd, handleEdit, handlePromote, handleReopen,
     deleteOpportunity, updateStatus, fetchClients,
     assignLead, fetchOpportunities,
@@ -206,6 +207,7 @@ export default function LeadsPage() {
           initial={emptyLeadForm()}
           showFirstTask
           showAssignedTo={isManager}
+          isSubmitting={isSubmitting}
           onClose={() => setShowAdd(false)}
           onSave={handleAdd}
         />
