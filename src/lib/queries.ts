@@ -8,6 +8,7 @@
 // Tất cả hàm return kiểu TypeScript đã được map — caller không cần biết SQL.
 
 import sql from './db';
+import type postgres from 'postgres';
 import type {
   Client, Opportunity, Activity, Task, Document, User,
   OpportunityStatus, StoredClientTag,
@@ -294,7 +295,10 @@ export async function createLead(
   const oppId    = `opp-${crypto.randomUUID().slice(0, 8)}`;
 
   const result = await sql.begin(async (tx) => {
-    const [clientRow] = await tx`
+    // Cast vì Omit<Sql> trong TransactionSql làm mất call signatures (TS limitation)
+    const t = tx as unknown as postgres.Sql;
+
+    const [clientRow] = await t`
       INSERT INTO clients (id, owner_id, name, company, avatar, email, phone, industry, country, website, tags, notes, created_at)
       VALUES (${clientId}, ${clientData.ownerId}, ${clientData.name}, ${clientData.company},
               ${clientData.avatar}, ${clientData.email}, ${clientData.phone}, ${clientData.industry},
@@ -302,7 +306,7 @@ export async function createLead(
               ${clientData.createdAt})
       RETURNING *`;
 
-    const [oppRow] = await tx`
+    const [oppRow] = await t`
       INSERT INTO opportunities (id, client_id, owner_id, title, value, status, confidence, date, notes, status_history)
       VALUES (${oppId}, ${clientId}, ${oppData.ownerId}, ${oppData.title}, ${oppData.value},
               ${oppData.status}, ${oppData.confidence}, ${oppData.date}, ${oppData.notes ?? null},
