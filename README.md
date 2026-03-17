@@ -10,6 +10,7 @@ CRM dashboard cho team sales B2B — quản lý leads, pipeline, activities, for
 
 - **Node.js** 18.17 trở lên
 - **npm** (đi kèm Node.js)
+- **Neon Postgres** — tạo DB tại [neon.tech](https://neon.tech), khuyến nghị region `ap-southeast-1` (Singapore)
 
 ---
 
@@ -21,7 +22,29 @@ cd nyxus
 
 # 2. Cài dependencies
 npm install
+
+# 3. Tạo file biến môi trường
+cp .env.example .env.local
+# Điền POSTGRES_URL từ Neon dashboard vào .env.local
+
+# 4. Tạo schema trên Neon
+# Vào Neon dashboard → SQL Editor → paste nội dung db/schema.sql → Run
+
+# 5. Seed dữ liệu demo
+npx tsx db/migrate.ts
 ```
+
+---
+
+## Biến môi trường
+
+Tạo file `.env.local` ở root với nội dung:
+
+```env
+POSTGRES_URL=postgresql://<user>:<password>@<host>-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+```
+
+Lấy connection string tại: Neon dashboard → project → **Connection string** → chọn **Pooled connection**.
 
 ---
 
@@ -54,6 +77,7 @@ Hai role có giao diện và quyền khác nhau — nên thử cả hai để th
 | Build | `npm run build` | Build production |
 | Start | `npm run start` | Chạy bản đã build (cần chạy build trước) |
 | Lint | `npm run lint` | Kiểm tra lỗi ESLint |
+| Migrate | `npx tsx db/migrate.ts` | Seed dữ liệu demo vào DB (chạy 1 lần, idempotent) |
 
 ---
 
@@ -61,13 +85,9 @@ Hai role có giao diện và quyền khác nhau — nên thử cả hai để th
 
 ```
 nyxus/
-├── data/                    # Database — JSON files (đọc/ghi trực tiếp)
-│   ├── users.json
-│   ├── clients.json
-│   ├── opportunities.json
-│   ├── activities.json
-│   ├── tasks.json
-│   └── documents.json
+├── db/
+│   ├── schema.sql           # Schema Postgres — chạy trên Neon SQL Editor
+│   └── migrate.ts           # Seed dữ liệu demo (idempotent, ON CONFLICT DO NOTHING)
 │
 ├── src/
 │   ├── app/                 # Next.js App Router
@@ -83,27 +103,29 @@ nyxus/
 │   │
 │   ├── store/               # Zustand stores + selectors
 │   ├── components/          # React components
-│   ├── lib/                 # json-db helper, auth utils
+│   ├── lib/
+│   │   ├── db.ts            # Neon client (postgres.js, SSL, connection pool)
+│   │   ├── queries.ts       # Toàn bộ SQL helpers — caller không viết raw SQL
+│   │   └── session.ts       # JWT auth helpers
 │   └── types/               # TypeScript interfaces
 │
 ├── middleware.ts             # JWT auth guard — bảo vệ tất cả routes
-├── REFACTOR.md              # Kiến trúc hệ thống (đọc trước khi code)
-└── docs/                    # Tài liệu chi tiết
+└── REFACTOR.md              # Kiến trúc hệ thống chi tiết (đọc trước khi code)
 ```
 
 ---
 
 ## Database
 
-Project dùng **JSON files** làm database — không cần cài đặt database server.
+Project dùng **Neon Postgres** (serverless Postgres). Không cần cài database local.
 
-Toàn bộ dữ liệu nằm trong thư mục `data/`. Đọc/ghi qua helper `src/lib/json-db.ts`.
+- **Client:** `postgres.js` với SSL required — config tại `src/lib/db.ts`
+- **Queries:** tất cả SQL tập trung tại `src/lib/queries.ts` — không viết raw SQL ở nơi khác
+- **Schema:** `db/schema.sql` — tạo một lần trên Neon SQL Editor
+- **Naming:** DB dùng `snake_case`, app dùng `camelCase` — mapper `rowToXxx()` trong `queries.ts` xử lý
 
-> ⚠️ File JSON bị ghi đè trực tiếp khi gọi API. Không có migration hay transaction.
-> Backup thư mục `data/` trước khi thực hiện thay đổi lớn.
-
-**Reset về dữ liệu gốc:**
-Khôi phục các file trong `data/` từ git hoặc từ bản backup.
+> 💡 **Region:** Dùng `ap-southeast-1` (Singapore) để giảm latency khi dev từ Việt Nam.
+> Region `us-east-1` thêm ~400-600ms mỗi request so với Singapore.
 
 ---
 
